@@ -209,11 +209,18 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
         successMsg: isPayment ? 'Payment recorded' : 'Spend recorded',
       );
 
-  void updateCardDetails(String cardId, {required int newTotalLimitPaise, String? categoryTag, int? aprBps}) =>
+  void updateCardDetails(
+    String cardId, {
+    required int newTotalLimitPaise,
+    String? name,
+    String? categoryTag,
+    int? aprBps,
+  }) =>
       _apply(
         (s) => repository.updateCardDetails(s,
             cardId: cardId,
             newTotalLimitPaise: newTotalLimitPaise,
+            name: name,
             categoryTag: categoryTag,
             aprBps: aprBps),
         successMsg: 'Card details updated',

@@ -125,6 +125,7 @@ class DhanflowRepository {
     DhanflowAppState state, {
     required String cardId,
     required int newTotalLimitPaise,
+    String? name,
     String? categoryTag,
     int? aprBps,
   }) {
@@ -138,10 +139,12 @@ class DhanflowRepository {
     // Financial logic rule: outstanding remains unchanged on limit change
     final newAvl = newTotalLimitPaise - card.outstandingPaise;
     final diff = newTotalLimitPaise - card.totalLimitPaise;
+    final trimmedName = name != null && name.trim().isNotEmpty ? name.trim() : card.name;
 
     final updatedCards = state.creditCards
         .map((c) => c.id == cardId
             ? c.copyWith(
+                name: trimmedName,
                 totalLimitPaise: newTotalLimitPaise,
                 availableLimitPaise: newAvl,
                 categoryTag: categoryTag ?? c.categoryTag,
@@ -155,10 +158,10 @@ class DhanflowRepository {
       state.copyWith(creditCards: updatedCards),
       eventType: 'CC_UPDATE',
       description:
-          '${card.name}: Total limit updated to ${INRFormatter.formatPaise(newTotalLimitPaise)}',
+          '$trimmedName: Total limit updated to ${INRFormatter.formatPaise(newTotalLimitPaise)}',
       deltaPaise: diff,
       entityId: card.id,
-      entityName: card.name,
+      entityName: trimmedName,
     );
   }
 

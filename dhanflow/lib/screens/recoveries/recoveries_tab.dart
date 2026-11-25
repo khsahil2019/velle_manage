@@ -147,10 +147,38 @@ class RecoveriesTab extends StatelessWidget {
                                 color: AppColors.accentGreen,
                                 bgColor: AppColors.greenDim,
                               ),
-                            TextButton(
-                              onPressed: () => cubit.removeRecovery(rec.id),
-                              child: const Text('Remove',
-                                  style: TextStyle(color: AppColors.accentRose)),
+                            PopupMenuButton<String>(
+                              tooltip: 'More options',
+                              color: AppColors.bgCard2,
+                              icon: const Icon(
+                                Icons.more_horiz_rounded,
+                                size: 19,
+                                color: AppColors.textTertiary,
+                              ),
+                              onSelected: (val) {
+                                if (val == 'delete') {
+                                  showProtectedDeleteDialog(
+                                    context,
+                                    title: 'Remove ${rec.name}?',
+                                    message: 'Pending balance: ${rec.pendingFormatted}. This removes this borrower from Kul Lena.',
+                                    actionLabel: 'Remove Borrower',
+                                    onConfirm: () => cubit.removeRecovery(rec.id),
+                                  );
+                                }
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.shield_outlined, size: 16, color: AppColors.accentRose),
+                                      SizedBox(width: 8),
+                                      Text('Remove Borrower',
+                                          style: TextStyle(fontSize: 12, color: AppColors.accentRose)),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

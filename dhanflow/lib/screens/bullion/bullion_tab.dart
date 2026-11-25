@@ -485,12 +485,41 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                       const SizedBox(width: 8),
                       Text(h ? '₹ ••••' : t.totalPaidFormatted,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      PopupMenuButton<String>(
+                        tooltip: 'Transaction options',
+                        color: AppColors.bgCard2,
                         padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.accentRose),
-                        onPressed: () => cubit.deleteBullionTransaction(t.id),
+                        icon: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 16,
+                          color: AppColors.textTertiary,
+                        ),
+                        onSelected: (val) {
+                          if (val == 'delete') {
+                            showProtectedDeleteDialog(
+                              context,
+                              title: 'Remove ${t.metal.toUpperCase()} Transaction?',
+                              message:
+                                  '${t.gramsFormatted} purchased on ${INRFormatter.formatDateTime(t.purchaseDate)} (Paid ${t.totalPaidFormatted}).',
+                              actionLabel: 'Delete Entry',
+                              onConfirm: () => cubit.deleteBullionTransaction(t.id),
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded,
+                                    size: 16, color: AppColors.accentRose),
+                                SizedBox(width: 8),
+                                Text('Remove Transaction',
+                                    style: TextStyle(fontSize: 12, color: AppColors.accentRose)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

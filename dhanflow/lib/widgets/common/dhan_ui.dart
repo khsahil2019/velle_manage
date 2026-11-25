@@ -544,3 +544,96 @@ Future<T?> showDhanBottomSheet<T>(
     ),
   );
 }
+
+/// Requires explicit typed confirmation ("DELETE") so financial records & basic transactions
+/// cannot be deleted accidentally with a single tap.
+Future<void> showProtectedDeleteDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required VoidCallback onConfirm,
+  String actionLabel = 'Confirm Delete',
+}) {
+  final confirmCtrl = TextEditingController();
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) {
+        final isUnlocked = confirmCtrl.text.trim().toUpperCase() == 'DELETE';
+        return AlertDialog(
+          backgroundColor: AppColors.bgCard2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: AppColors.accentRose.withValues(alpha: 0.35)),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.roseDim,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.shield_outlined, color: AppColors.accentRose, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(title, style: AppTextStyles.sectionTitle),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(message, style: AppTextStyles.body),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.roseDim.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.accentRose.withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  'Protected action: direct one-tap delete is disabled. Type DELETE below to confirm.',
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: confirmCtrl,
+                textCapitalization: TextCapitalization.characters,
+                onChanged: (_) => setDialogState(() {}),
+                decoration: const InputDecoration(
+                  labelText: 'Type DELETE to unlock',
+                  hintText: 'DELETE',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isUnlocked ? AppColors.accentRose : AppColors.bgHover,
+                foregroundColor: isUnlocked ? Colors.white : AppColors.textTertiary,
+              ),
+              onPressed: isUnlocked
+                  ? () {
+                      Navigator.pop(ctx);
+                      onConfirm();
+                    }
+                  : null,
+              child: Text(actionLabel),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}

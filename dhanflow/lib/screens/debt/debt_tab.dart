@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/inr_formatter.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../models/models.dart';
+import '../../widgets/cards/cred_credit_card.dart';
 import '../../widgets/common/dhan_ui.dart';
 
 class DebtTab extends StatefulWidget {
@@ -139,19 +140,70 @@ class _CreditCardsView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
       children: [
-        SectionHeader(
-          title: 'Credit Cards Ledger',
-          subtitle:
-              '${kpi.clearedCardsCount}/${kpi.totalCardsCount} cleared · Total Limit ${hidden ? '₹ ••••••' : INRFormatter.formatPaise(kpi.totalCCLimitPaise)} · Util ${INRFormatter.formatPct(kpi.overallUtilizationPct)}',
-          trailing: ElevatedButton.icon(
-            onPressed: () => _showAddCardSheet(context),
-            icon: const Icon(Icons.add_rounded, size: 16),
-            label: const Text('Add Card'),
+        // CRED-style Credit Cards Portfolio Command Strip
+        DhanCard(
+          padding: const EdgeInsets.all(16),
+          borderColor: AppColors.borderLight,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF141A28), Color(0xFF0D111A)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SectionHeader(
+                title: 'Credit Cards Wallet',
+                subtitle:
+                    '${kpi.clearedCardsCount}/${kpi.totalCardsCount} cleared · Tap any card to update balances',
+                trailing: ElevatedButton.icon(
+                  onPressed: () => _showAddCardSheet(context),
+                  icon: const Icon(Icons.add_card_rounded, size: 16),
+                  label: const Text('Add Card'),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCol(
+                      'TOTAL CARD DUE',
+                      hidden ? '₹ ••••••' : INRFormatter.formatPaise(kpi.totalCCOutstandingPaise),
+                      AppColors.accentRose,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _StatCol(
+                      'AVAILABLE LIMIT',
+                      hidden
+                          ? '₹ ••••••'
+                          : INRFormatter.formatPaise(
+                              (kpi.totalCCLimitPaise - kpi.totalCCOutstandingPaise)
+                                  .clamp(0, kpi.totalCCLimitPaise),
+                            ),
+                      AppColors.accentGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _StatCol(
+                      'UTILIZATION',
+                      INRFormatter.formatPct(kpi.overallUtilizationPct),
+                      AppColors.utilizationColor(kpi.overallUtilizationPct),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              UtilizationBar(percentage: kpi.overallUtilizationPct, height: 5),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Wrap(
           spacing: 8,
+          runSpacing: 6,
           children: [
             ChoiceChip(
               label: Text('All (${allCards.length})'),
@@ -188,27 +240,46 @@ class _CreditCardsView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        if (isWide)
+        const SizedBox(height: 14),
+        if (cards.isEmpty)
+          const DhanCard(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No cards match this filter', style: AppTextStyles.body),
+              ),
+            ),
+          )
+        else if (isWide)
           LayoutBuilder(
             builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 12) / 2;
+              final cardWidth = (constraints.maxWidth - 14) / 2;
               return Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: 14,
+                runSpacing: 14,
                 children: cards
-                    .map((c) => SizedBox(
+                    .asMap()
+                    .entries
+                    .map((entry) => SizedBox(
                           width: cardWidth,
-                          child: _CreditCardItem(card: c, hidden: hidden),
+                          child: _CreditCardItem(
+                            card: entry.value,
+                            hidden: hidden,
+                            index: entry.key,
+                          ),
                         ))
                     .toList(),
               );
             },
           )
         else
-          ...cards.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _CreditCardItem(card: c, hidden: hidden),
+          ...cards.asMap().entries.map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _CreditCardItem(
+                  card: entry.value,
+                  hidden: hidden,
+                  index: entry.key,
+                ),
               )),
       ],
     );
@@ -218,262 +289,491 @@ class _CreditCardsView extends StatelessWidget {
 class _CreditCardItem extends StatelessWidget {
   final CreditCardModel card;
   final bool hidden;
-  const _CreditCardItem({required this.card, required this.hidden});
+  final int index;
+
+  const _CreditCardItem({
+    required this.card,
+    required this.hidden,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<DhanflowCubit>();
-    return DhanCard(
-      borderColor: card.isCleared ? AppColors.accentGreen.withValues(alpha: 0.35) : AppColors.border,
-      gradient: card.isCleared
-          ? LinearGradient(
-              colors: [AppColors.bgCard, AppColors.greenDim.withValues(alpha: 0.16)],
-            )
-          : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              BankAvatarBadge(name: card.name),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      card.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.cardTitle,
-                    ),
-                    Text('APR ${(card.aprBps / 100).toStringAsFixed(1)}%',
-                        style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 145),
-                child: card.isCleared
-                    ? const StatusChip(
-                        text: '✓ CLEARED',
-                        color: AppColors.accentGreen,
-                        bgColor: AppColors.greenDim,
-                      )
-                    : StatusChip(
-                        text: card.categoryTag,
-                        color: card.isCoveredByRecovery ? AppColors.accentBlue : AppColors.accentAmber,
-                        bgColor: card.isCoveredByRecovery ? AppColors.blueDim : AppColors.amberDim,
-                      ),
-              ),
-            ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 240 + (index.clamp(0, 6) * 45)),
+      curve: Curves.easeOutCubic,
+      builder: (context, anim, child) {
+        return Opacity(
+          opacity: anim,
+          child: Transform.translate(
+            offset: Offset(0, (1 - anim) * 14),
+            child: child,
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('OUTSTANDING', style: AppTextStyles.label),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        hidden ? '₹ ••••••' : card.outstandingFormatted,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                          color: card.isCleared ? AppColors.accentGreen : AppColors.accentRose,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text('AVAILABLE', style: AppTextStyles.label),
-                    const SizedBox(height: 2),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        hidden ? '₹ ••••••' : card.availableFormatted,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                          color: AppColors.accentGreen,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      'of ${hidden ? '₹ ••••••' : card.totalLimitFormatted}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Utilization', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
-              Text(
-                card.utilizationFormatted,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: card.utilizationColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          UtilizationBar(percentage: card.utilizationPct),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _MiniActionButton(
-                label: 'Avl Limit',
-                icon: Icons.swap_vert_rounded,
-                color: AppColors.accentBlue,
-                onTap: () => _showAvlLimitSheet(context, card),
-              ),
-              _MiniActionButton(
-                label: 'Pay / Spend',
-                icon: Icons.currency_rupee_rounded,
-                color: AppColors.accentGreen,
-                onTap: () => _showPaySpendSheet(context, card),
-              ),
-              _MiniActionButton(
-                label: 'Edit Limit',
-                icon: Icons.edit_outlined,
-                color: AppColors.textSecondary,
-                onTap: () => _showEditLimitSheet(context, card),
-              ),
-              _MiniActionButton(
-                label: 'Delete',
-                icon: Icons.delete_outline_rounded,
-                color: AppColors.accentRose,
-                onTap: () => _confirmDelete(
-                  context,
-                  title: 'Remove ${card.name}?',
-                  message: 'Outstanding: ${card.outstandingFormatted}',
-                  onConfirm: () => cubit.removeCreditCard(card.id),
-                ),
-              ),
-            ],
-          ),
-        ],
+        );
+      },
+      child: CredCreditCard(
+        card: card,
+        hidden: hidden,
+        onTapCard: () => _showCardCommandSheet(context, card, initialMode: 0),
+        onTapOutstanding: () => _showCardCommandSheet(context, card, initialMode: 1),
+        onTapAvailable: () => _showCardCommandSheet(context, card, initialMode: 0),
+        onTapTag: () => _showCardCommandSheet(context, card, initialMode: 2),
       ),
     );
   }
 }
 
-void _showAvlLimitSheet(BuildContext context, CreditCardModel card) {
-  final ctrl = TextEditingController();
+const List<String> _kQuickCardTags = [
+  'Active Pocket Debt',
+  'Covered by EMI',
+  'Quick Zero Target',
+  'No Cost EMI',
+  'Cleared',
+];
+
+/// Unified CRED-style bottom sheet triggered anywhere the user taps on a credit card.
+void _showCardCommandSheet(
+  BuildContext context,
+  CreditCardModel card, {
+  int initialMode = 0, // 0 = Avl Limit, 1 = Pay / Spend, 2 = Edit / Tag
+}) {
+  int mode = initialMode;
+  final avlCtrl = TextEditingController();
+  final txnAmtCtrl = TextEditingController();
+  final txnNoteCtrl = TextEditingController();
+  bool isPayment = true;
+
+  final nameCtrl = TextEditingController(text: card.name);
+  final limitCtrl = TextEditingController(text: (card.totalLimitPaise / 100.0).toStringAsFixed(2));
+  final tagCtrl = TextEditingController(text: card.categoryTag);
+  final aprCtrl = TextEditingController(text: (card.aprBps / 100.0).toStringAsFixed(1));
+
+  final theme = resolveBankTheme(card.name, isCleared: card.isCleared);
+
   showDhanBottomSheet(context, builder: (ctx) {
     return StatefulBuilder(builder: (ctx, setSheetState) {
-      final parsed = double.tryParse(ctrl.text);
-      final newAvlPaise = parsed != null ? PaiseMath.rupeesToPaise(parsed) : null;
+      final parsedAvl = double.tryParse(avlCtrl.text);
+      final newAvlPaise = parsedAvl != null ? PaiseMath.rupeesToPaise(parsedAvl) : null;
       final previewOut = newAvlPaise != null
           ? (card.totalLimitPaise - newAvlPaise).clamp(0, card.totalLimitPaise)
           : null;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Update Available Limit — ${card.name}', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 4),
-          Text('Current available: ${card.availableFormatted} · Total: ${card.totalLimitFormatted}',
-              style: AppTextStyles.caption),
+          // Header strip with bank icon + quick summary
+          Row(
+            children: [
+              BankEmblemIcon(brand: theme.brand, fallbackLabel: theme.bankCode, size: 38),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(card.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.sectionTitle),
+                    Text(
+                      'Due ${card.outstandingFormatted} · Avl ${card.availableFormatted}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
-          TextField(
-            controller: ctrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: true,
-            onChanged: (_) => setSheetState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'New Available Limit from Bank App (₹)',
-              prefixText: '₹ ',
+
+          // Mode Switcher Pills
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppColors.bgPrimary,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                _SegmentButton(
+                  label: 'Update Avl',
+                  selected: mode == 0,
+                  onTap: () => setSheetState(() => mode = 0),
+                ),
+                _SegmentButton(
+                  label: 'Pay / Spend',
+                  selected: mode == 1,
+                  onTap: () => setSheetState(() => mode = 1),
+                ),
+                _SegmentButton(
+                  label: 'Edit / Tag',
+                  selected: mode == 2,
+                  onTap: () => setSheetState(() => mode = 2),
+                ),
+              ],
             ),
           ),
-          if (previewOut != null) ...[
-            const SizedBox(height: 10),
-            DhanCard(
-              backgroundColor: AppColors.bgHover,
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('New Outstanding', style: TextStyle(fontSize: 12)),
-                  Text(INRFormatter.formatPaise(previewOut),
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.accentAmber)),
-                ],
+          const SizedBox(height: 16),
+
+          if (mode == 0) ...[
+            TextField(
+              controller: avlCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              onChanged: (_) => setSheetState(() {}),
+              decoration: InputDecoration(
+                labelText: 'New Available Limit from Bank App (₹)',
+                hintText: (card.availableLimitPaise / 100.0).toStringAsFixed(2),
+                prefixText: '₹ ',
+                suffixIcon: TextButton(
+                  onPressed: () {
+                    avlCtrl.text = (card.totalLimitPaise / 100.0).toStringAsFixed(2);
+                    setSheetState(() {});
+                  },
+                  child: const Text('FULL'),
+                ),
               ),
             ),
+            if (previewOut != null) ...[
+              const SizedBox(height: 10),
+              DhanCard(
+                backgroundColor: AppColors.bgHover,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Updated Card Due', style: TextStyle(fontSize: 12)),
+                    Text(
+                      INRFormatter.formatPaise(previewOut),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: previewOut == 0 ? AppColors.accentGreen : AppColors.accentAmber,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            ElevatedButton(
+              onPressed: () {
+                if (newAvlPaise == null || newAvlPaise < 0) return;
+                context.read<DhanflowCubit>().updateCardAvailableLimit(card.id, newAvlPaise);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Update Available Limit'),
+            ),
+          ] else if (mode == 1) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('💳 Payment Made'),
+                      ),
+                    ),
+                    selected: isPayment,
+                    selectedColor: AppColors.accentGreen,
+                    labelStyle: TextStyle(
+                      color: isPayment ? Colors.black : AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    onSelected: (_) => setSheetState(() => isPayment = true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('🛒 New Spend'),
+                      ),
+                    ),
+                    selected: !isPayment,
+                    selectedColor: AppColors.accentRose,
+                    labelStyle: TextStyle(
+                      color: !isPayment ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    onSelected: (_) => setSheetState(() => isPayment = false),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: txnAmtCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Amount (₹)',
+                prefixText: '₹ ',
+                suffixIcon: (isPayment && card.outstandingPaise > 0)
+                    ? TextButton(
+                        onPressed: () {
+                          txnAmtCtrl.text = (card.outstandingPaise / 100.0).toStringAsFixed(2);
+                          setSheetState(() {});
+                        },
+                        child: const Text('PAY FULL'),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: txnNoteCtrl,
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isPayment ? AppColors.accentGreen : AppColors.accentRose,
+                foregroundColor: isPayment ? Colors.black : Colors.white,
+              ),
+              onPressed: () {
+                final val = double.tryParse(txnAmtCtrl.text);
+                if (val == null || val <= 0) return;
+                context.read<DhanflowCubit>().recordCardTransaction(
+                      card.id,
+                      isPayment: isPayment,
+                      amountPaise: PaiseMath.rupeesToPaise(val),
+                      note: txnNoteCtrl.text,
+                    );
+                Navigator.pop(ctx);
+              },
+              child: Text(isPayment ? 'Record Payment' : 'Record Spend'),
+            ),
+          ] else ...[
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Card Name'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: limitCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Total Credit Limit (₹)', prefixText: '₹ '),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: tagCtrl,
+              onChanged: (_) => setSheetState(() {}),
+              decoration: const InputDecoration(labelText: 'Tag'),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _kQuickCardTags
+                  .map((tag) => ChoiceChip(
+                        label: Text(tag, style: const TextStyle(fontSize: 10.5)),
+                        selected: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase(),
+                        selectedColor: AppColors.accentGreen,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase()
+                              ? Colors.black
+                              : AppColors.textSecondary,
+                        ),
+                        onSelected: (_) => setSheetState(() => tagCtrl.text = tag),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: aprCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'APR % (for Debt Engine)'),
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton(
+              onPressed: () {
+                final lim = double.tryParse(limitCtrl.text);
+                final apr = double.tryParse(aprCtrl.text);
+                if (lim == null || lim <= 0) return;
+                context.read<DhanflowCubit>().updateCardDetails(
+                      card.id,
+                      name: nameCtrl.text,
+                      newTotalLimitPaise: PaiseMath.rupeesToPaise(lim),
+                      categoryTag: tagCtrl.text,
+                      aprBps: apr != null ? (apr * 100).round() : null,
+                    );
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save Changes'),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: AppColors.accentRose),
+              onPressed: () {
+                Navigator.pop(ctx);
+                showProtectedDeleteDialog(
+                  context,
+                  title: 'Remove ${card.name}?',
+                  message: 'Current due: ${card.outstandingFormatted}. Card data will be removed from your active ledger.',
+                  actionLabel: 'Delete Card',
+                  onConfirm: () => context.read<DhanflowCubit>().removeCreditCard(card.id),
+                );
+              },
+              icon: const Icon(Icons.shield_outlined, size: 16),
+              label: const Text('Remove Card from Ledger (Protected)'),
+            ),
           ],
-          const SizedBox(height: 14),
-          ElevatedButton(
-            onPressed: () {
-              if (newAvlPaise == null) return;
-              context.read<DhanflowCubit>().updateCardAvailableLimit(card.id, newAvlPaise);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Update Available Limit'),
-          ),
         ],
       );
     });
   });
 }
 
-void _showPaySpendSheet(BuildContext context, CreditCardModel card) {
-  final amtCtrl = TextEditingController();
-  final noteCtrl = TextEditingController();
-  bool isPayment = true;
+void _showAddCardSheet(BuildContext context) {
+  final nameCtrl = TextEditingController(text: kBankPresets.first.defaultCardName);
+  final limCtrl = TextEditingController();
+  final valCtrl = TextEditingController();
+  final tagCtrl = TextEditingController(text: 'Active Pocket Debt');
+  BankBrand selectedBrand = kBankPresets.first.brand;
+  bool enterAvailableMode = true; // true = enter Available Limit, false = enter Current Due
 
   showDhanBottomSheet(context, builder: (ctx) {
     return StatefulBuilder(builder: (ctx, setSheetState) {
+      final limRupees = double.tryParse(limCtrl.text) ?? 50000;
+      final inputRupees = double.tryParse(valCtrl.text) ?? (enterAvailableMode ? limRupees : 0);
+      final limPaise = PaiseMath.rupeesToPaise(limRupees.clamp(0, 100000000));
+      final enteredPaise = PaiseMath.rupeesToPaise(inputRupees.clamp(0, limRupees.clamp(0, 100000000)));
+      final previewAvl = enterAvailableMode ? enteredPaise : (limPaise - enteredPaise).clamp(0, limPaise);
+
+      final previewModel = CreditCardModel(
+        id: 'preview',
+        userId: 'preview',
+        name: nameCtrl.text.trim().isEmpty ? 'Your New Card' : nameCtrl.text.trim(),
+        totalLimitPaise: limPaise > 0 ? limPaise : 5000000,
+        availableLimitPaise: limPaise > 0 ? previewAvl : 5000000,
+        categoryTag: tagCtrl.text,
+        displayOrder: 0,
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('${card.name} — Payment / Spend', style: AppTextStyles.sectionTitle),
+          const Text('Add Credit Card', style: AppTextStyles.sectionTitle),
           const SizedBox(height: 4),
-          Text('Outstanding: ${card.outstandingFormatted} · Available: ${card.availableFormatted}',
+          const Text('Pick a bank and fill limits — live card updates below',
               style: AppTextStyles.caption),
           const SizedBox(height: 12),
+
+          // Live CRED Card Preview
+          CredCreditCard(card: previewModel, isPreview: true),
+          const SizedBox(height: 14),
+
+          // 1-Tap Bank Selector Row with Authentic Bank Icons
+          const Text('SELECT BANK', style: AppTextStyles.label),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 70,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: kBankPresets.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (_, idx) {
+                final preset = kBankPresets[idx];
+                final isSelected = selectedBrand == preset.brand;
+                return GestureDetector(
+                  onTap: () {
+                    setSheetState(() {
+                      selectedBrand = preset.brand;
+                      if (preset.defaultCardName.isNotEmpty) {
+                        nameCtrl.text = preset.defaultCardName;
+                      } else {
+                        nameCtrl.clear();
+                      }
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 66,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.greenDim.withValues(alpha: 0.45) : AppColors.bgHover,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected ? AppColors.accentGreen : AppColors.borderLight,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        BankEmblemIcon(
+                          brand: preset.brand,
+                          fallbackLabel: preset.label,
+                          size: 30,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          preset.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? AppColors.accentGreen : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          TextField(
+            controller: nameCtrl,
+            onChanged: (_) => setSheetState(() {}),
+            decoration: const InputDecoration(labelText: 'Card Name'),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: limCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setSheetState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'Total Limit (₹)',
+              hintText: '50000',
+              prefixText: '₹ ',
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: ChoiceChip(
                   label: const SizedBox(
                     width: double.infinity,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('💳 Payment Made'),
-                    ),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: Text('Enter Available Limit')),
                   ),
-                  selected: isPayment,
+                  selected: enterAvailableMode,
                   selectedColor: AppColors.accentGreen,
                   labelStyle: TextStyle(
-                      color: isPayment ? Colors.black : AppColors.textSecondary,
-                      fontWeight: FontWeight.w700),
-                  onSelected: (_) => setSheetState(() => isPayment = true),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: enterAvailableMode ? Colors.black : AppColors.textSecondary,
+                  ),
+                  onSelected: (_) => setSheetState(() => enterAvailableMode = true),
                 ),
               ),
               const SizedBox(width: 8),
@@ -481,151 +781,83 @@ void _showPaySpendSheet(BuildContext context, CreditCardModel card) {
                 child: ChoiceChip(
                   label: const SizedBox(
                     width: double.infinity,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text('🛒 New Spend'),
-                    ),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: Text('Enter Current Due')),
                   ),
-                  selected: !isPayment,
-                  selectedColor: AppColors.accentRose,
+                  selected: !enterAvailableMode,
+                  selectedColor: AppColors.accentAmber,
                   labelStyle: TextStyle(
-                      color: !isPayment ? Colors.white : AppColors.textSecondary,
-                      fontWeight: FontWeight.w700),
-                  onSelected: (_) => setSheetState(() => isPayment = false),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: !enterAvailableMode ? Colors.black : AppColors.textSecondary,
+                  ),
+                  onSelected: (_) => setSheetState(() => enterAvailableMode = false),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           TextField(
-            controller: amtCtrl,
+            controller: valCtrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Amount (₹)', prefixText: '₹ '),
+            onChanged: (_) => setSheetState(() {}),
+            decoration: InputDecoration(
+              labelText: enterAvailableMode ? 'Available Limit (₹)' : 'Current Due / Outstanding (₹)',
+              hintText: enterAvailableMode ? 'Leave blank for full limit' : '0',
+              prefixText: '₹ ',
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
-            controller: noteCtrl,
-            decoration: const InputDecoration(labelText: 'Note (optional)'),
+            controller: tagCtrl,
+            onChanged: (_) => setSheetState(() {}),
+            decoration: const InputDecoration(labelText: 'Tag'),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _kQuickCardTags
+                .map((tag) => ChoiceChip(
+                      label: Text(tag, style: const TextStyle(fontSize: 10.5)),
+                      selected: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase(),
+                      selectedColor: AppColors.accentGreen,
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase()
+                            ? Colors.black
+                            : AppColors.textSecondary,
+                      ),
+                      onSelected: (_) => setSheetState(() => tagCtrl.text = tag),
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 14),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isPayment ? AppColors.accentGreen : AppColors.accentRose,
-              foregroundColor: isPayment ? Colors.black : Colors.white,
-            ),
             onPressed: () {
-              final val = double.tryParse(amtCtrl.text);
-              if (val == null || val <= 0) return;
-              context.read<DhanflowCubit>().recordCardTransaction(
-                    card.id,
-                    isPayment: isPayment,
-                    amountPaise: PaiseMath.rupeesToPaise(val),
-                    note: noteCtrl.text,
+              final lim = double.tryParse(limCtrl.text);
+              if (nameCtrl.text.trim().isEmpty || lim == null || lim <= 0) return;
+              final parsedVal = double.tryParse(valCtrl.text);
+              final totalPaise = PaiseMath.rupeesToPaise(lim);
+              final int avlPaise;
+              if (parsedVal == null) {
+                avlPaise = totalPaise;
+              } else {
+                final vPaise = PaiseMath.rupeesToPaise(parsedVal).clamp(0, totalPaise);
+                avlPaise = enterAvailableMode ? vPaise : (totalPaise - vPaise).clamp(0, totalPaise);
+              }
+              context.read<DhanflowCubit>().addCreditCard(
+                    name: nameCtrl.text,
+                    totalLimitPaise: totalPaise,
+                    availableLimitPaise: avlPaise,
+                    categoryTag: tagCtrl.text,
                   );
               Navigator.pop(ctx);
             },
-            child: Text(isPayment ? 'Record Payment' : 'Record Spend'),
+            child: const Text('Add Card to Wallet'),
           ),
         ],
       );
     });
-  });
-}
-
-void _showEditLimitSheet(BuildContext context, CreditCardModel card) {
-  final limitCtrl = TextEditingController(text: (card.totalLimitPaise / 100.0).toStringAsFixed(2));
-  final tagCtrl = TextEditingController(text: card.categoryTag);
-  final aprCtrl = TextEditingController(text: (card.aprBps / 100.0).toStringAsFixed(1));
-
-  showDhanBottomSheet(context, builder: (ctx) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Edit Card — ${card.name}', style: AppTextStyles.sectionTitle),
-        const SizedBox(height: 4),
-        Text('Outstanding remains ${card.outstandingFormatted} on limit changes',
-            style: AppTextStyles.caption),
-        const SizedBox(height: 14),
-        TextField(
-          controller: limitCtrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Total Credit Limit (₹)', prefixText: '₹ '),
-        ),
-        const SizedBox(height: 10),
-        TextField(controller: tagCtrl, decoration: const InputDecoration(labelText: 'Category Tag')),
-        const SizedBox(height: 10),
-        TextField(
-          controller: aprCtrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'APR % (for Debt Engine)'),
-        ),
-        const SizedBox(height: 14),
-        ElevatedButton(
-          onPressed: () {
-            final lim = double.tryParse(limitCtrl.text);
-            final apr = double.tryParse(aprCtrl.text);
-            if (lim == null || lim <= 0) return;
-            context.read<DhanflowCubit>().updateCardDetails(
-                  card.id,
-                  newTotalLimitPaise: PaiseMath.rupeesToPaise(lim),
-                  categoryTag: tagCtrl.text,
-                  aprBps: apr != null ? (apr * 100).round() : null,
-                );
-            Navigator.pop(ctx);
-          },
-          child: const Text('Save Changes'),
-        ),
-      ],
-    );
-  });
-}
-
-void _showAddCardSheet(BuildContext context) {
-  final nameCtrl = TextEditingController();
-  final limCtrl = TextEditingController();
-  final avlCtrl = TextEditingController();
-  final tagCtrl = TextEditingController(text: 'Active Pocket Debt');
-
-  showDhanBottomSheet(context, builder: (ctx) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text('Add Credit Card', style: AppTextStyles.sectionTitle),
-        const SizedBox(height: 12),
-        TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Card Name')),
-        const SizedBox(height: 10),
-        TextField(
-          controller: limCtrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Total Limit (₹)', prefixText: '₹ '),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: avlCtrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Available Limit (₹)', prefixText: '₹ '),
-        ),
-        const SizedBox(height: 10),
-        TextField(controller: tagCtrl, decoration: const InputDecoration(labelText: 'Category Tag')),
-        const SizedBox(height: 14),
-        ElevatedButton(
-          onPressed: () {
-            final lim = double.tryParse(limCtrl.text);
-            final avl = double.tryParse(avlCtrl.text);
-            if (nameCtrl.text.trim().isEmpty || lim == null || avl == null) return;
-            context.read<DhanflowCubit>().addCreditCard(
-                  name: nameCtrl.text,
-                  totalLimitPaise: PaiseMath.rupeesToPaise(lim),
-                  availableLimitPaise: PaiseMath.rupeesToPaise(avl),
-                  categoryTag: tagCtrl.text,
-                );
-            Navigator.pop(ctx);
-          },
-          child: const Text('Add Card'),
-        ),
-      ],
-    );
   });
 }
 
@@ -717,7 +949,7 @@ class _LoansPayablesView extends StatelessWidget {
                       children: [
                         if (!loan.isCleared)
                           ElevatedButton.icon(
-                            onPressed: () => _confirmDelete(
+                            onPressed: () => _confirmEmiAction(
                               context,
                               title: 'Mark 1 EMI Paid?',
                               message:
@@ -729,14 +961,38 @@ class _LoansPayablesView extends StatelessWidget {
                             icon: const Icon(Icons.check_rounded, size: 16),
                             label: const Text('Mark 1 EMI Paid'),
                           ),
-                        TextButton(
-                          onPressed: () => _confirmDelete(
-                            context,
-                            title: 'Remove ${loan.name}?',
-                            message: 'Balance: ${loan.totalRemainingFormatted}',
-                            onConfirm: () => cubit.removeLoan(loan.id),
+                        PopupMenuButton<String>(
+                          tooltip: 'More options',
+                          color: AppColors.bgCard2,
+                          icon: const Icon(
+                            Icons.more_horiz_rounded,
+                            size: 19,
+                            color: AppColors.textTertiary,
                           ),
-                          child: const Text('Remove', style: TextStyle(color: AppColors.accentRose)),
+                          onSelected: (val) {
+                            if (val == 'delete') {
+                              showProtectedDeleteDialog(
+                                context,
+                                title: 'Remove ${loan.name}?',
+                                message: 'Remaining balance: ${loan.totalRemainingFormatted}.',
+                                actionLabel: 'Delete Loan',
+                                onConfirm: () => cubit.removeLoan(loan.id),
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.shield_outlined, size: 16, color: AppColors.accentRose),
+                                  SizedBox(width: 8),
+                                  Text('Remove Loan',
+                                      style: TextStyle(fontSize: 12, color: AppColors.accentRose)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -799,9 +1055,38 @@ class _LoansPayablesView extends StatelessWidget {
                             onPressed: () => _showPayPayableSheet(context, p),
                             child: const Text('Record Payment'),
                           ),
-                        TextButton(
-                          onPressed: () => cubit.removePayable(p.id),
-                          child: const Text('Remove', style: TextStyle(color: AppColors.accentRose)),
+                        PopupMenuButton<String>(
+                          tooltip: 'More options',
+                          color: AppColors.bgCard2,
+                          icon: const Icon(
+                            Icons.more_horiz_rounded,
+                            size: 19,
+                            color: AppColors.textTertiary,
+                          ),
+                          onSelected: (val) {
+                            if (val == 'delete') {
+                              showProtectedDeleteDialog(
+                                context,
+                                title: 'Remove ${p.name}?',
+                                message: 'Pending amount: ${p.amountFormatted}.',
+                                actionLabel: 'Delete Payable',
+                                onConfirm: () => cubit.removePayable(p.id),
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.shield_outlined, size: 16, color: AppColors.accentRose),
+                                  SizedBox(width: 8),
+                                  Text('Remove Payable',
+                                      style: TextStyle(fontSize: 12, color: AppColors.accentRose)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1140,51 +1425,13 @@ class _StatCol extends StatelessWidget {
   }
 }
 
-class _MiniActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _MiniActionButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.bgHover,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.borderLight),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-Future<void> _confirmDelete(
+Future<void> _confirmEmiAction(
   BuildContext context, {
   required String title,
   required String message,
   required VoidCallback onConfirm,
   String confirmText = 'Confirm',
-  Color confirmColor = AppColors.accentRose,
+  Color confirmColor = AppColors.accentGreen,
 }) {
   return showDialog<void>(
     context: context,

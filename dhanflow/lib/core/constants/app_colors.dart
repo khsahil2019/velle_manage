@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // ── BACKGROUNDS ────────────────────────────────────────────
-  static const Color bgPrimary = Color(0xFF0B1120);    // Deep navy
-  static const Color bgCard    = Color(0xFF111827);    // Elevated card
-  static const Color bgCard2   = Color(0xFF161F30);    // Modal / deeper card
-  static const Color bgHover   = Color(0xFF1A2235);    // Hover / input
-  
+  // ── BACKGROUNDS (CRED-inspired obsidian dark palette) ───────
+  static const Color bgPrimary = Color(0xFF07090F);    // Deep obsidian
+  static const Color bgCard    = Color(0xFF10141E);    // Elevated obsidian card
+  static const Color bgCard2   = Color(0xFF151B28);    // Modal / deeper sheet
+  static const Color bgHover   = Color(0xFF1B2333);    // Input / hover well
+
   // ── BORDERS ────────────────────────────────────────────────
-  static const Color border      = Color(0xFF1F2937);  // Subtle card borders
-  static const Color borderLight = Color(0xFF2D3748);  // Input focus
+  static const Color border      = Color(0xFF20293A);  // Hairline metallic border
+  static const Color borderLight = Color(0xFF313E54);  // Focused rim
 
   // ── ACCENT COLORS (Semantic) ────────────────────────────────
   static const Color accentGreen  = Color(0xFF10B981); // Cleared / assets / positive
