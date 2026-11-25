@@ -60,6 +60,5 @@ try {
 
     Response::error('Method not allowed', 405);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Loans error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Loans operation failed');
 }

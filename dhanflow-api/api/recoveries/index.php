@@ -64,6 +64,5 @@ try {
 
     Response::error('Method not allowed', 405);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Recoveries error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Recoveries operation failed');
 }

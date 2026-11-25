@@ -58,10 +58,6 @@ try {
         $db->rollBack();
         throw $e;
     }
-} catch (\RuntimeException $e) {
-    if ($e->getCode() === 404) Response::notFound($e->getMessage());
-    Response::serverError();
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Payable pay error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Payable payment failed');
 }

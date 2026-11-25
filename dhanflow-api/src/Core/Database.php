@@ -16,91 +16,170 @@ class Database {
     private string $driver;
 
     private function __construct() {
-        $url = (string)($_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL')
-            ?: ($_ENV['POSTGRES_URL'] ?? getenv('POSTGRES_URL')
-            ?: ($_ENV['MYSQL_URL'] ?? getenv('MYSQL_URL') ?: '')));
-
-        $explicitDriver = strtolower((string)($_ENV['DB_DRIVER'] ?? getenv('DB_DRIVER') ?: ''));
-
-        if ($explicitDriver === 'sqlite') {
-            $this->driver = 'sqlite';
-            $path = (string)($_ENV['DB_PATH'] ?? getenv('DB_PATH') ?: ':memory:');
-            $this->pdo = new PDO("sqlite:{$path}", null, null, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]);
-            $this->pdo->exec('PRAGMA foreign_keys = ON;');
-            $this->ensureSchemaInitialized();
-            return;
-        }
-
-        if ($url !== '' && (str_starts_with($url, 'postgres://') || str_starts_with($url, 'postgresql://'))) {
-            $this->driver = 'pgsql';
-            $parts = parse_url($url);
-            $host  = $parts['host'] ?? '127.0.0.1';
-            $port  = $parts['port'] ?? 5432;
-            $db    = ltrim((string)($parts['path'] ?? '/postgres'), '/');
-            $user  = urldecode((string)($parts['user'] ?? ''));
-            $pass  = urldecode((string)($parts['pass'] ?? ''));
-            parse_str((string)($parts['query'] ?? ''), $q);
-            $ssl   = $q['sslmode'] ?? 'require';
-            $dsn   = "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}";
-            $this->pdo = new PDO($dsn, $user, $pass, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]);
-            $this->ensureSchemaInitialized();
-            return;
-        }
-
-        if ($url !== '' && str_starts_with($url, 'mysql://')) {
-            $this->driver = 'mysql';
-            $parts = parse_url($url);
-            $host  = $parts['host'] ?? '127.0.0.1';
-            $port  = (string)($parts['port'] ?? '3306');
-            $name  = ltrim((string)($parts['path'] ?? '/dhanflow'), '/');
-            $user  = urldecode((string)($parts['user'] ?? ''));
-            $pass  = urldecode((string)($parts['pass'] ?? ''));
-        } else {
-            $this->driver = $explicitDriver === 'pgsql' ? 'pgsql' : 'mysql';
-            $host = (string)($_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '');
-            $name = (string)($_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: '');
-            $user = (string)($_ENV['DB_USER'] ?? getenv('DB_USER') ?: '');
-            $pass = (string)($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '');
-            $port = (string)($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: ($this->driver === 'pgsql' ? '5432' : '3306'));
-        }
-
-        if ($host === '' || $name === '' || $user === '') {
+        $spec = self::resolveConnectionSpec();
+        if (!$spec['configured']) {
             throw new \RuntimeException(
                 'Database not configured: set DATABASE_URL (PostgreSQL/MySQL) or DB_HOST, DB_NAME, DB_USER, DB_PASS, JWT_SECRET in Vercel Environment Variables.',
                 503
             );
         }
 
-        if ($this->driver === 'pgsql') {
-            $ssl = (string)($_ENV['DB_SSLMODE'] ?? getenv('DB_SSLMODE') ?: 'require');
-            $dsn = "pgsql:host={$host};port={$port};dbname={$name};sslmode={$ssl}";
-            $this->pdo = new PDO($dsn, $user, $pass, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ]);
-        } else {
-            $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
-            $options = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ];
-            if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
-                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
-            }
-            $this->pdo = new PDO($dsn, $user, $pass, $options);
+        $this->driver = $spec['driver'];
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+
+        if ($this->driver === 'sqlite') {
+            $this->pdo = new PDO($spec['dsn'], null, null, $options);
+            $this->pdo->exec('PRAGMA foreign_keys = ON;');
+            $this->ensureSchemaInitialized();
+            return;
         }
 
+        if ($this->driver === 'mysql' && defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
+        }
+
+        $this->pdo = new PDO($spec['dsn'], $spec['user'], $spec['pass'], $options);
         $this->ensureSchemaInitialized();
+    }
+
+    private static function readEnv(string $key): string {
+        $val = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+        return is_string($val) ? trim($val) : '';
+    }
+
+    private static function firstEnv(array $keys): array {
+        foreach ($keys as $key) {
+            $val = self::readEnv($key);
+            if ($val !== '') {
+                return [$val, $key];
+            }
+        }
+        return ['', ''];
+    }
+
+    public static function inspectConfiguration(): array {
+        $spec = self::resolveConnectionSpec();
+        return [
+            'database_configured' => $spec['configured'],
+            'database_driver'     => $spec['configured'] ? $spec['driver'] : null,
+            'config_source'       => $spec['source'],
+            'extensions'          => [
+                'pdo'        => extension_loaded('pdo'),
+                'pdo_pgsql'  => extension_loaded('pdo_pgsql'),
+                'pdo_mysql'  => extension_loaded('pdo_mysql'),
+                'pdo_sqlite' => extension_loaded('pdo_sqlite'),
+                'bcmath'     => extension_loaded('bcmath'),
+                'openssl'    => extension_loaded('openssl'),
+            ],
+        ];
+    }
+
+    private static function resolveConnectionSpec(): array {
+        $explicitDriver = strtolower(self::readEnv('DB_DRIVER'));
+
+        if ($explicitDriver === 'sqlite') {
+            $path = self::readEnv('DB_PATH') ?: ':memory:';
+            return [
+                'configured' => true,
+                'driver'     => 'sqlite',
+                'dsn'        => "sqlite:{$path}",
+                'user'       => null,
+                'pass'       => null,
+                'source'     => 'DB_DRIVER=sqlite',
+            ];
+        }
+
+        [$url, $urlKey] = self::firstEnv([
+            'DATABASE_URL',
+            'POSTGRES_URL',
+            'POSTGRES_PRISMA_URL',
+            'POSTGRES_URL_NON_POOLING',
+            'STORAGE_POSTGRES_URL',
+            'NEON_DATABASE_URL',
+            'SUPABASE_DB_URL',
+            'MYSQL_URL',
+            'DB_URL',
+        ]);
+
+        if ($url !== '') {
+            $parts = parse_url($url);
+            $scheme = strtolower((string)($parts['scheme'] ?? ''));
+            if (in_array($scheme, ['postgres', 'postgresql', 'pgsql'], true)) {
+                $host = $parts['host'] ?? '127.0.0.1';
+                $port = (string)($parts['port'] ?? 5432);
+                $db   = ltrim((string)($parts['path'] ?? '/postgres'), '/');
+                $user = urldecode((string)($parts['user'] ?? ''));
+                $pass = urldecode((string)($parts['pass'] ?? ''));
+                parse_str((string)($parts['query'] ?? ''), $q);
+                $ssl  = $q['sslmode'] ?? (self::readEnv('DB_SSLMODE') ?: 'require');
+                return [
+                    'configured' => $host !== '' && $db !== '' && $user !== '',
+                    'driver'     => 'pgsql',
+                    'dsn'        => "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}",
+                    'user'       => $user,
+                    'pass'       => $pass,
+                    'source'     => $urlKey,
+                ];
+            }
+            if ($scheme === 'mysql') {
+                $host = $parts['host'] ?? '127.0.0.1';
+                $port = (string)($parts['port'] ?? '3306');
+                $db   = ltrim((string)($parts['path'] ?? '/dhanflow'), '/');
+                $user = urldecode((string)($parts['user'] ?? ''));
+                $pass = urldecode((string)($parts['pass'] ?? ''));
+                return [
+                    'configured' => $host !== '' && $db !== '' && $user !== '',
+                    'driver'     => 'mysql',
+                    'dsn'        => "mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4",
+                    'user'       => $user,
+                    'pass'       => $pass,
+                    'source'     => $urlKey,
+                ];
+            }
+        }
+
+        [$host, $hostKey] = self::firstEnv(['DB_HOST', 'PGHOST', 'MYSQLHOST']);
+        [$name]            = self::firstEnv(['DB_NAME', 'PGDATABASE', 'MYSQLDATABASE']);
+        [$user]            = self::firstEnv(['DB_USER', 'PGUSER', 'MYSQLUSER']);
+        [$pass]            = self::firstEnv(['DB_PASS', 'PGPASSWORD', 'MYSQLPASSWORD', 'DB_PASSWORD']);
+
+        $isPg = $explicitDriver === 'pgsql' || $hostKey === 'PGHOST';
+        $driver = $isPg ? 'pgsql' : 'mysql';
+        [$port] = self::firstEnv(['DB_PORT', 'PGPORT', 'MYSQLPORT']);
+        if ($port === '') {
+            $port = $driver === 'pgsql' ? '5432' : '3306';
+        }
+
+        if ($host === '' || $name === '' || $user === '') {
+            return [
+                'configured' => false,
+                'driver'     => null,
+                'dsn'        => '',
+                'user'       => null,
+                'pass'       => null,
+                'source'     => 'none',
+            ];
+        }
+
+        if ($driver === 'pgsql') {
+            $ssl = self::readEnv('DB_SSLMODE') ?: 'require';
+            $dsn = "pgsql:host={$host};port={$port};dbname={$name};sslmode={$ssl}";
+        } else {
+            $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
+        }
+
+        return [
+            'configured' => true,
+            'driver'     => $driver,
+            'dsn'        => $dsn,
+            'user'       => $user,
+            'pass'       => $pass,
+            'source'     => $hostKey ?: 'DB_HOST',
+        ];
     }
 
     public static function getInstance(): self {

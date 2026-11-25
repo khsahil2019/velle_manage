@@ -73,6 +73,5 @@ try {
 
     Response::error('Method not allowed', 405);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Cards error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Cards operation failed');
 }

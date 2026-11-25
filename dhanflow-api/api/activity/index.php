@@ -13,8 +13,8 @@ try {
         $offset = ($page - 1) * $limit;
 
         $entries = $db->execute(
-            "SELECT * FROM activity_log WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            [$userId, $limit, $offset]
+            "SELECT * FROM activity_log WHERE user_id = ? ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}",
+            [$userId]
         )->fetchAll();
 
         $total = (int)$db->execute(
@@ -32,6 +32,5 @@ try {
 
     Response::error('Method not allowed', 405);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Activity error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Failed to load activity log');
 }

@@ -24,6 +24,5 @@ try {
     $plan = $engine->simulatePayoff($userId, $strategy, $budget, $aprOverrides, $customOrder);
     Response::success($plan);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Debt engine error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Failed to simulate payoff plan');
 }

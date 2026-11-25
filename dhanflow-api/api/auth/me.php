@@ -31,7 +31,5 @@ try {
         'counts'         => $counts,
     ]);
 } catch (\Throwable $e) {
-    if ($e->getCode() === 503) Response::error($e->getMessage(), 503);
-    error_log('[DHANFLOW] Auth me error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Failed to fetch user profile');
 }

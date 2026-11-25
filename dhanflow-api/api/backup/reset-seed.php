@@ -14,6 +14,5 @@ try {
 
     Response::success(['reset' => true], 'Account reset to initial financial snapshot');
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Reset seed error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Account seed reset failed');
 }

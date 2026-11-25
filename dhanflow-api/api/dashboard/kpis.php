@@ -10,9 +10,5 @@ try {
     $snapshot = $kpi->getFullSnapshot($userId);
     Response::success($snapshot);
 } catch (\Throwable $e) {
-    $code = $e->getCode();
-    if ($code === 401) Response::unauthorized($e->getMessage());
-    if ($code === 404) Response::notFound($e->getMessage());
-    error_log('[DHANFLOW] KPI error: ' . $e->getMessage());
-    Response::serverError('Failed to compute KPIs');
+    Response::handleThrowable($e, 'Failed to compute KPIs');
 }

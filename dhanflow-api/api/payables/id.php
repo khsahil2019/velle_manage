@@ -43,10 +43,6 @@ try {
     }
 
     Response::error('Method not allowed', 405);
-} catch (\RuntimeException $e) {
-    if ($e->getCode() === 404) Response::notFound($e->getMessage());
-    Response::serverError();
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Payable ID error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Payable operation failed');
 }

@@ -72,11 +72,6 @@ try {
         'new_outstanding' => $newOutstanding,
         'utilization_pct' => $totalLimit > 0 ? round(($newOutstanding / $totalLimit) * 100, 2) : 0.0,
     ]);
-} catch (\RuntimeException $e) {
-    if ($e->getCode() === 404) Response::notFound($e->getMessage());
-    error_log('[DHANFLOW] AVL update error: ' . $e->getMessage());
-    Response::serverError();
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Unexpected: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Available limit update failed');
 }

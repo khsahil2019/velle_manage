@@ -46,7 +46,5 @@ try {
 
     Response::success($snapshot);
 } catch (\Throwable $e) {
-    if ($e->getCode() === 503) Response::error($e->getMessage(), 503);
-    error_log('[DHANFLOW] Export error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Backup export failed');
 }

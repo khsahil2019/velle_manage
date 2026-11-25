@@ -9,7 +9,10 @@ class Auth {
     private static string $secret;
 
     public static function init(): void {
-        self::$secret = $_ENV['JWT_SECRET'] ?? getenv('JWT_SECRET') ?: 'dhanflow_dev_secret_change_in_prod';
+        $raw = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? getenv('JWT_SECRET');
+        self::$secret = is_string($raw) && trim($raw) !== ''
+            ? trim($raw)
+            : 'dhanflow_dev_secret_change_in_prod';
     }
 
     public static function requireAuth(): string {

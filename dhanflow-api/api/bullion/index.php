@@ -23,6 +23,5 @@ try {
         'transactions' => $txns,
     ]);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Bullion index error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Failed to load bullion data');
 }

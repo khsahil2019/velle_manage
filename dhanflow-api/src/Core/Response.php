@@ -45,6 +45,15 @@ class Response {
         self::error($message, 500);
     }
 
+    public static function handleThrowable(\Throwable $e, string $fallback = 'Internal server error'): never {
+        $code = (int)$e->getCode();
+        if (in_array($code, [400, 401, 403, 404, 409, 422, 503], true)) {
+            self::error($e->getMessage() ?: $fallback, $code);
+        }
+        error_log('[Trustvly API] ' . $e->getMessage());
+        self::serverError($fallback);
+    }
+
     private static function setHeaders(int $status): void {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');

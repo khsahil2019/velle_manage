@@ -32,7 +32,5 @@ try {
         'tokens' => $tokens,
     ]);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Login error: ' . $e->getMessage());
-    if ($e->getCode() === 503) Response::error($e->getMessage(), 503);
-    Response::serverError();
+    Response::handleThrowable($e, 'Login failed');
 }

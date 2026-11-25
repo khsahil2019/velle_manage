@@ -31,11 +31,6 @@ try {
         : "Recovery payment recorded");
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
-} catch (\RuntimeException $e) {
-    if ($e->getCode() === 404) Response::notFound($e->getMessage());
-    error_log('[DHANFLOW] Recovery error: ' . $e->getMessage());
-    Response::serverError('Recovery recording failed');
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Unexpected: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Recovery recording failed');
 }

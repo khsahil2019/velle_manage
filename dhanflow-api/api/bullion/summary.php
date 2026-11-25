@@ -50,6 +50,5 @@ try {
         'silver_stats' => $kpi->computeBullionStats($txns, 'silver', $settings),
     ]);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Bullion summary error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Bullion summary operation failed');
 }

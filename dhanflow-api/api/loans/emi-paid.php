@@ -20,11 +20,6 @@ try {
         : "EMI marked as paid. {$result['new_remaining_emis']} remaining.");
 } catch (\InvalidArgumentException $e) {
     Response::error($e->getMessage(), 422);
-} catch (\RuntimeException $e) {
-    if ($e->getCode() === 404) Response::notFound($e->getMessage());
-    error_log('[DHANFLOW] EMI error: ' . $e->getMessage());
-    Response::serverError('EMI update failed');
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Unexpected: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'EMI update failed');
 }

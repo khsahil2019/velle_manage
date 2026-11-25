@@ -167,8 +167,5 @@ try {
         throw $e;
     }
 } catch (\Throwable $e) {
-    if ($e->getCode() === 503)
-        Response::error($e->getMessage(), 503);
-    error_log('[DHANFLOW] Import error: ' . $e->getMessage());
-    Response::serverError('Sync failed: ' . $e->getMessage());
+    Response::handleThrowable($e, 'Cloud sync failed');
 }

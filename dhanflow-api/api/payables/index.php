@@ -52,6 +52,5 @@ try {
 
     Response::error('Method not allowed', 405);
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Payables error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Payables operation failed');
 }

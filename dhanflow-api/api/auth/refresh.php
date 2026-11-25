@@ -28,6 +28,5 @@ try {
 } catch (\InvalidArgumentException $e) {
     Response::unauthorized($e->getMessage());
 } catch (\Throwable $e) {
-    error_log('[DHANFLOW] Refresh error: ' . $e->getMessage());
-    Response::serverError();
+    Response::handleThrowable($e, 'Token refresh failed');
 }
