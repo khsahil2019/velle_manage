@@ -1,5 +1,5 @@
-import 'package:dhanflow/core/constants/api_constants.dart';
-import 'package:dhanflow/services/local_storage_service.dart';
+import '../constants/api_constants.dart';
+import '../../services/local_storage_service.dart';
 import 'package:dio/dio.dart';
 
 class ApiClient {

@@ -90,13 +90,19 @@ class _SegmentButton extends StatelessWidget {
             color: selected ? AppColors.accentGreen : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: selected ? Colors.black : AppColors.textSecondary,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: selected ? Colors.black : AppColors.textSecondary,
+                ),
+              ),
             ),
           ),
         ),
@@ -235,63 +241,87 @@ class _CreditCardItem extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(card.name, style: AppTextStyles.cardTitle),
+                    Text(
+                      card.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.cardTitle,
+                    ),
                     Text('APR ${(card.aprBps / 100).toStringAsFixed(1)}%',
                         style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
                   ],
                 ),
               ),
-              if (card.isCleared)
-                const StatusChip(
-                  text: '✓ CLEARED',
-                  color: AppColors.accentGreen,
-                  bgColor: AppColors.greenDim,
-                )
-              else
-                StatusChip(
-                  text: card.categoryTag,
-                  color: card.isCoveredByRecovery ? AppColors.accentBlue : AppColors.accentAmber,
-                  bgColor: card.isCoveredByRecovery ? AppColors.blueDim : AppColors.amberDim,
-                ),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 145),
+                child: card.isCleared
+                    ? const StatusChip(
+                        text: '✓ CLEARED',
+                        color: AppColors.accentGreen,
+                        bgColor: AppColors.greenDim,
+                      )
+                    : StatusChip(
+                        text: card.categoryTag,
+                        color: card.isCoveredByRecovery ? AppColors.accentBlue : AppColors.accentAmber,
+                        bgColor: card.isCoveredByRecovery ? AppColors.blueDim : AppColors.amberDim,
+                      ),
+              ),
             ],
           ),
           const SizedBox(height: 14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('OUTSTANDING', style: AppTextStyles.label),
-                  const SizedBox(height: 2),
-                  Text(
-                    hidden ? '₹ ••••••' : card.outstandingFormatted,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      color: card.isCleared ? AppColors.accentGreen : AppColors.accentRose,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('OUTSTANDING', style: AppTextStyles.label),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        hidden ? '₹ ••••••' : card.outstandingFormatted,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: card.isCleared ? AppColors.accentGreen : AppColors.accentRose,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text('AVAILABLE', style: AppTextStyles.label),
-                  const SizedBox(height: 2),
-                  Text(
-                    hidden ? '₹ ••••••' : card.availableFormatted,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                      color: AppColors.accentGreen,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('AVAILABLE', style: AppTextStyles.label),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        hidden ? '₹ ••••••' : card.availableFormatted,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                          color: AppColors.accentGreen,
+                        ),
+                      ),
                     ),
-                  ),
-                  Text('of ${hidden ? '₹ ••••••' : card.totalLimitFormatted}',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
-                ],
+                    Text(
+                      'of ${hidden ? '₹ ••••••' : card.totalLimitFormatted}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -431,7 +461,13 @@ void _showPaySpendSheet(BuildContext context, CreditCardModel card) {
             children: [
               Expanded(
                 child: ChoiceChip(
-                  label: const Text('💳 Payment Made'),
+                  label: const SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('💳 Payment Made'),
+                    ),
+                  ),
                   selected: isPayment,
                   selectedColor: AppColors.accentGreen,
                   labelStyle: TextStyle(
@@ -443,7 +479,13 @@ void _showPaySpendSheet(BuildContext context, CreditCardModel card) {
               const SizedBox(width: 8),
               Expanded(
                 child: ChoiceChip(
-                  label: const Text('🛒 New Spend'),
+                  label: const SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('🛒 New Spend'),
+                    ),
+                  ),
                   selected: !isPayment,
                   selectedColor: AppColors.accentRose,
                   labelStyle: TextStyle(
@@ -632,16 +674,23 @@ class _LoansPayablesView extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _StatCol('EMI AMOUNT', hidden ? '₹ •••••' : loan.emiFormatted,
-                            AppColors.accentBlue),
-                        _StatCol('REMAINING', '${loan.remainingEmis} / ${loan.originalEmis}',
-                            AppColors.accentAmber),
-                        _StatCol(
-                            'TOTAL BALANCE',
-                            hidden ? '₹ ••••••' : loan.totalRemainingFormatted,
-                            loan.isCleared ? AppColors.accentGreen : AppColors.accentRose),
+                        Expanded(
+                          child: _StatCol('EMI AMOUNT', hidden ? '₹ •••••' : loan.emiFormatted,
+                              AppColors.accentBlue),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatCol('REMAINING', '${loan.remainingEmis} / ${loan.originalEmis}',
+                              AppColors.accentAmber),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatCol(
+                              'TOTAL BALANCE',
+                              hidden ? '₹ ••••••' : loan.totalRemainingFormatted,
+                              loan.isCleared ? AppColors.accentGreen : AppColors.accentRose),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -661,7 +710,10 @@ class _LoansPayablesView extends StatelessWidget {
                       }),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (!loan.isCleared)
                           ElevatedButton.icon(
@@ -677,7 +729,6 @@ class _LoansPayablesView extends StatelessWidget {
                             icon: const Icon(Icons.check_rounded, size: 16),
                             label: const Text('Mark 1 EMI Paid'),
                           ),
-                        const SizedBox(width: 8),
                         TextButton(
                           onPressed: () => _confirmDelete(
                             context,
@@ -717,11 +768,15 @@ class _LoansPayablesView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(p.name, style: AppTextStyles.cardTitle),
+                              Text(p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.cardTitle),
                               if (p.note.isNotEmpty) Text(p.note, style: AppTextStyles.caption),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           hidden ? '₹ •••••' : p.amountFormatted,
                           style: TextStyle(
@@ -734,14 +789,16 @@ class _LoansPayablesView extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (!p.isSettled)
                           ElevatedButton(
                             onPressed: () => _showPayPayableSheet(context, p),
                             child: const Text('Record Payment'),
                           ),
-                        const SizedBox(width: 8),
                         TextButton(
                           onPressed: () => cubit.removePayable(p.id),
                           child: const Text('Remove', style: TextStyle(color: AppColors.accentRose)),
@@ -918,8 +975,11 @@ class _DebtFreedomEngineView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Monthly Repayment Budget',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const Expanded(
+                    child: Text('Monthly Repayment Budget',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     hidden
                         ? '₹ •••••'
@@ -950,17 +1010,25 @@ class _DebtFreedomEngineView extends StatelessWidget {
               const Text('Payoff Projection', style: AppTextStyles.sectionTitle),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _StatCol(
-                      'TOTAL DEBT',
-                      hidden ? '₹ ••••••' : INRFormatter.formatPaise(plan.totalDebtPaise),
-                      AppColors.accentRose),
-                  _StatCol('TIME TO FREEDOM', '${plan.monthsToFreedom} months', AppColors.accentGreen),
-                  _StatCol(
-                      'INTEREST SAVED',
-                      hidden ? '₹ •••••' : INRFormatter.formatPaise(plan.interestSavedPaise),
-                      AppColors.accentAmber),
+                  Expanded(
+                    child: _StatCol(
+                        'TOTAL DEBT',
+                        hidden ? '₹ ••••••' : INRFormatter.formatPaise(plan.totalDebtPaise),
+                        AppColors.accentRose),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatCol('TIME TO FREEDOM', '${plan.monthsToFreedom} months',
+                        AppColors.accentGreen),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatCol(
+                        'INTEREST SAVED',
+                        hidden ? '₹ •••••' : INRFormatter.formatPaise(plan.interestSavedPaise),
+                        AppColors.accentAmber),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
@@ -1016,7 +1084,10 @@ class _DebtFreedomEngineView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(step.name, style: AppTextStyles.cardTitle),
+                        Text(step.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.cardTitle),
                         Text(
                           'Balance: ${hidden ? '₹ •••••' : INRFormatter.formatPaise(step.startingBalancePaise)} · APR ${(step.aprBps / 100).toStringAsFixed(1)}%',
                           style: AppTextStyles.caption,
@@ -1024,6 +1095,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   StatusChip(
                     text: 'Month ${step.clearedInMonth}',
                     color: AppColors.accentBlue,
@@ -1051,14 +1123,18 @@ class _StatCol extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.label),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.label),
         const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: color,
-                fontFeatures: const [FontFeature.tabularFigures()])),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()])),
+        ),
       ],
     );
   }

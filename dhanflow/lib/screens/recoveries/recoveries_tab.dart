@@ -67,7 +67,12 @@ class RecoveriesTab extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(rec.name, style: AppTextStyles.cardTitle),
+                                  Text(
+                                    rec.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.cardTitle,
+                                  ),
                                   if (rec.note.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text(rec.note, style: AppTextStyles.caption),
@@ -75,6 +80,7 @@ class RecoveriesTab extends StatelessWidget {
                                 ],
                               ),
                             ),
+                            const SizedBox(width: 10),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -102,7 +108,13 @@ class RecoveriesTab extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Recovery Progress', style: AppTextStyles.caption),
+                              const Expanded(
+                                child: Text('Recovery Progress',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.caption),
+                              ),
+                              const SizedBox(width: 8),
                               Text('${rec.recoveryPct.toStringAsFixed(1)}% recovered',
                                   style: const TextStyle(
                                       fontSize: 11,
@@ -117,7 +129,10 @@ class RecoveriesTab extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 12),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             if (!rec.isSettled)
                               ElevatedButton.icon(
@@ -132,7 +147,6 @@ class RecoveriesTab extends StatelessWidget {
                                 color: AppColors.accentGreen,
                                 bgColor: AppColors.greenDim,
                               ),
-                            const SizedBox(width: 8),
                             TextButton(
                               onPressed: () => cubit.removeRecovery(rec.id),
                               child: const Text('Remove',
@@ -252,12 +266,17 @@ class RecoveriesTab extends StatelessWidget {
                     if (linkToCard)
                       DropdownButtonFormField<String>(
                         initialValue: selectedCardId,
+                        isExpanded: true,
                         dropdownColor: AppColors.bgCard2,
                         items: outstandingCards
                             .map((c) => DropdownMenuItem(
                                   value: c.id,
-                                  child: Text('${c.name} (${c.outstandingFormatted} due)',
-                                      style: const TextStyle(fontSize: 12)),
+                                  child: Text(
+                                    '${c.name} (${c.outstandingFormatted} due)',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                 ))
                             .toList(),
                         onChanged: (v) => setSheetState(() => selectedCardId = v),
@@ -276,7 +295,15 @@ class RecoveriesTab extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${rec.name} Pending After', style: AppTextStyles.caption),
+                        Expanded(
+                          child: Text(
+                            '${rec.name} Pending After',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.caption,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           INRFormatter.formatPaise(
                               (rec.totalPendingPaise - amtPaise).clamp(0, rec.totalPendingPaise)),
@@ -290,8 +317,15 @@ class RecoveriesTab extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${selectedCard.name} Outstanding After',
-                              style: AppTextStyles.caption),
+                          Expanded(
+                            child: Text(
+                              '${selectedCard.name} Outstanding After',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.caption,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Text(
                             INRFormatter.formatPaise((selectedCard.outstandingPaise - amtPaise)
                                 .clamp(0, selectedCard.totalLimitPaise)),

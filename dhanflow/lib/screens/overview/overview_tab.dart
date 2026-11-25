@@ -42,15 +42,9 @@ class OverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // 6-Tile KPI Breakdown Grid
-            GridView.count(
-              crossAxisCount: crossCount,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: width >= 600 ? 2.15 : 1.55,
-              children: [
+            // 6-Tile KPI Breakdown Grid (intrinsic row height prevents RenderFlex overflow)
+            Builder(builder: (context) {
+              final tiles = [
                 KPITile(
                   label: 'Kul Dena (Gross)',
                   value: kpi.kulDenaFormatted,
@@ -104,8 +98,24 @@ class OverviewTab extends StatelessWidget {
                   hidden: hidden,
                   onTap: () => onNavigateTab(1),
                 ),
-              ],
-            ),
+              ];
+              final rows = <Widget>[];
+              for (int i = 0; i < tiles.length; i += crossCount) {
+                final rowTiles = <Widget>[];
+                for (int j = 0; j < crossCount; j++) {
+                  final idx = i + j;
+                  rowTiles.add(
+                    Expanded(child: idx < tiles.length ? tiles[idx] : const SizedBox.shrink()),
+                  );
+                  if (j < crossCount - 1) rowTiles.add(const SizedBox(width: 10));
+                }
+                rows.add(IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: rowTiles),
+                ));
+                if (i + crossCount < tiles.length) rows.add(const SizedBox(height: 10));
+              }
+              return Column(children: rows);
+            }),
             const SizedBox(height: 8),
             const Text(
               'Note: Bullion Cost Basis reflects pre-GST purchase value, not guaranteed liquidation value.',
@@ -140,13 +150,15 @@ class OverviewTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             const Text(
                               'Debt Freedom Engine',
                               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                             ),
-                            const SizedBox(width: 8),
                             StatusChip(
                               text: plan.strategy.toUpperCase(),
                               color: AppColors.accentGreen,
@@ -360,12 +372,12 @@ class _HealthScoreCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Flexible(
-                          child: Text('Financial Health Score', style: AppTextStyles.sectionTitle),
-                        ),
-                        const SizedBox(width: 6),
+                        const Text('Financial Health Score', style: AppTextStyles.sectionTitle),
                         StatusChip(
                           text: hs.ratingLabel as String,
                           color: ringColor,
@@ -391,8 +403,15 @@ class _HealthScoreCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(b.label as String,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      Expanded(
+                        child: Text(
+                          b.label as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text('${b.score}/${b.max}',
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                     ],

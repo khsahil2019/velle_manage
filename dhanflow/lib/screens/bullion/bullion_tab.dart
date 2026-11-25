@@ -135,7 +135,13 @@ class BullionTab extends StatelessWidget {
               children: [
                 Expanded(
                   child: ChoiceChip(
-                    label: const Text('Pre-GST Rate/gm'),
+                    label: const SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Pre-GST Rate/gm'),
+                      ),
+                    ),
                     selected: rateMode,
                     selectedColor: AppColors.accentGreen,
                     labelStyle: TextStyle(
@@ -148,7 +154,13 @@ class BullionTab extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: ChoiceChip(
-                    label: const Text('Total Paid (Incl. GST)'),
+                    label: const SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Total Paid (Incl. GST)'),
+                      ),
+                    ),
                     selected: !rateMode,
                     selectedColor: AppColors.accentGreen,
                     labelStyle: TextStyle(
@@ -192,7 +204,11 @@ class BullionTab extends StatelessWidget {
                 }
               },
               icon: const Icon(Icons.calendar_today_rounded, size: 15),
-              label: Text('Purchase Date: ${INRFormatter.formatDateTime(selectedDate)}'),
+              label: Text(
+                'Purchase Date: ${INRFormatter.formatDateTime(selectedDate)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (paidPreview != null &&
                 preGstPreview != null &&
@@ -300,10 +316,16 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
         children: [
           Row(
             children: [
-              Text('${widget.emoji} ${widget.title}',
+              Expanded(
+                child: Text(
+                  '${widget.emoji} ${widget.title}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800, color: widget.accentColor)),
-              const Spacer(),
+                      fontSize: 16, fontWeight: FontWeight.w800, color: widget.accentColor),
+                ),
+              ),
+              const SizedBox(width: 8),
               StatusChip(
                 text: s.totalGramsFormatted,
                 color: widget.accentColor,
@@ -312,23 +334,46 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
             ],
           ),
           const SizedBox(height: 14),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 3.0,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 6,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MetricCell('Avg Buy (Pre-GST)', h ? '₹ •••••' : s.avgRateFormatted),
-              _MetricCell('Effective Cost (Incl. GST)', h ? '₹ •••••' : s.effectiveCostFormatted),
-              _MetricCell('Pre-GST Asset Value', h ? '₹ •••••' : s.assetValueFormatted,
-                  color: AppColors.accentGreen),
-              _MetricCell('Total Cash Paid', h ? '₹ •••••' : s.totalPaidFormatted),
-              _MetricCell('Total 3% GST Paid', h ? '₹ •••' : s.gstPaidFormatted,
-                  color: AppColors.accentRose),
-              _MetricCell('Break-Even Sell/gm', h ? '₹ •••••' : s.effectiveCostFormatted,
-                  color: AppColors.accentAmber),
+              Expanded(
+                child: _MetricCell('Avg Buy (Pre-GST)', h ? '₹ •••••' : s.avgRateFormatted),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child:
+                    _MetricCell('Effective Cost (Incl. GST)', h ? '₹ •••••' : s.effectiveCostFormatted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _MetricCell('Pre-GST Asset Value', h ? '₹ •••••' : s.assetValueFormatted,
+                    color: AppColors.accentGreen),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MetricCell('Total Cash Paid', h ? '₹ •••••' : s.totalPaidFormatted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _MetricCell('Total 3% GST Paid', h ? '₹ •••' : s.gstPaidFormatted,
+                    color: AppColors.accentRose),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MetricCell('Break-Even Sell/gm', h ? '₹ •••••' : s.effectiveCostFormatted,
+                    color: AppColors.accentAmber),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -368,31 +413,44 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                 if (pl != null && sellVal != null) ...[
                   const SizedBox(height: 10),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('EST. SELL VALUE', style: AppTextStyles.label),
-                          Text(h ? '₹ •••••' : INRFormatter.formatPaise(sellVal),
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('UNREALISED P/L', style: AppTextStyles.label),
-                          Text(
-                            h
-                                ? '₹ ••••'
-                                : '${pl >= 0 ? '+' : ''}${INRFormatter.formatPaise(pl)} (${s.returnPct?.toStringAsFixed(2) ?? '0.00'}%)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: pl >= 0 ? AppColors.accentGreen : AppColors.accentRose,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('EST. SELL VALUE', style: AppTextStyles.label),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(h ? '₹ •••••' : INRFormatter.formatPaise(sellVal),
+                                  style:
+                                      const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text('UNREALISED P/L', style: AppTextStyles.label),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                h
+                                    ? '₹ ••••'
+                                    : '${pl >= 0 ? '+' : ''}${INRFormatter.formatPaise(pl)} (${s.returnPct?.toStringAsFixed(2) ?? '0.00'}%)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  color: pl >= 0 ? AppColors.accentGreen : AppColors.accentRose,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -424,9 +482,13 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(h ? '₹ ••••' : t.totalPaidFormatted,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       IconButton(
+                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        padding: EdgeInsets.zero,
                         icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.accentRose),
                         onPressed: () => cubit.deleteBullionTransaction(t.id),
                       ),
@@ -452,14 +514,23 @@ class _MetricCell extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
+        Text(
+          label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+        ),
         const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-                color: color ?? AppColors.textPrimary)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: color ?? AppColors.textPrimary)),
+        ),
       ],
     );
   }
@@ -478,7 +549,15 @@ class _PreviewRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTextStyles.caption),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption,
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(value,
               style: TextStyle(
                   fontSize: 12, fontWeight: FontWeight.w700, color: color ?? AppColors.textPrimary)),

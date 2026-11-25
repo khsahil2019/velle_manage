@@ -154,12 +154,14 @@ class HeroCommandCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              StatusChip(
-                text: isPositive ? 'NET POSITIVE' : 'NET LIABILITY AFTER ASSETS',
-                color: accent,
-                bgColor: accent.withValues(alpha: 0.14),
+              Flexible(
+                child: StatusChip(
+                  text: isPositive ? 'NET POSITIVE' : 'NET LIABILITY AFTER ASSETS',
+                  color: accent,
+                  bgColor: accent.withValues(alpha: 0.14),
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               IconButton(
                 tooltip: hidden ? 'Show balances' : 'Hide balances',
                 visualDensity: VisualDensity.compact,
@@ -263,6 +265,7 @@ class KPITile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       borderColor: AppColors.border,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -449,6 +452,8 @@ class StatusChip extends StatelessWidget {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
@@ -489,7 +494,10 @@ class SectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
+        if (trailing != null) ...[
+          const SizedBox(width: 10),
+          Flexible(flex: 0, child: trailing!),
+        ],
       ],
     );
   }

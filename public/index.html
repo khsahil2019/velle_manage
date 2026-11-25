@@ -1,24 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0B1120">
   <meta name="description"
     content="Trustvly — Debt Freedom. Wealth Clarity. Personal Finance, Debt Payoff & Bullion Tracker.">
@@ -34,17 +23,230 @@
 
   <title>Trustvly — Debt Freedom &amp; Wealth Tracker</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    @property --arc-start {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+    @property --arc-end {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+    @property --progress-dash-animation {
+      syntax: "*";
+      inherits: false;
+      initial-value: , progress-dash 2.4s ease-in-out infinite;
+    }
+
+    :root {
+      color-scheme: dark;
+      background-color: #0B1120;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0B1120;
+      color: #F9FAFB;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #trustvly-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 18% 15%, rgba(16, 185, 129, 0.16), transparent 42%),
+        radial-gradient(circle at 84% 85%, rgba(245, 158, 11, 0.12), transparent 45%),
+        #0B1120;
+      opacity: 1;
+      transition: opacity 0.28s ease-out;
+    }
+
+    #trustvly-splash.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .splash-emblem {
+      width: 84px;
+      height: 84px;
+      border-radius: 22px;
+      padding: 4px;
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.45), rgba(245, 158, 11, 0.2));
+      box-shadow: 0 16px 40px rgba(16, 185, 129, 0.18);
+      display: grid;
+      place-items: center;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .splash-emblem {
+        animation: splash-float 2.8s ease-in-out infinite;
+      }
+    }
+
+    .splash-emblem img {
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .splash-title {
+      margin: 4px 0 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #F9FAFB;
+    }
+
+    .splash-tag {
+      margin: -8px 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #10B981;
+    }
+
+    progress.loading-spinner:indeterminate::-webkit-progress-bar,
+    progress.loading-spinner:indeterminate::-webkit-progress-value,
+    progress.loading-spinner:indeterminate::-moz-progress-bar {
+      display: none;
+      background: none;
+    }
+
+    progress.loading-spinner:indeterminate {
+      --_from: calc(90deg + var(--arc-start, 0deg));
+      --_to: calc(90deg + var(--arc-end, 158deg));
+      --size: 32px;
+      --thickness: 3px;
+      --spinner-color: #10B981;
+      --track-color: #1F2937;
+      --spinner-duration: 1.2s;
+      --_used-spinner-duration: var(--spinner-duration);
+
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      appearance: none;
+      border: 0;
+      background: conic-gradient(
+          from var(--_from),
+          var(--spinner-color) calc(var(--_to) - var(--_from)),
+          transparent 0
+        )
+        var(--track-color);
+      animation:
+        progress-spin var(--_used-spinner-duration) linear infinite
+        var(--progress-dash-animation, );
+    }
+
+    @supports (background-clip: border-area) {
+      progress.loading-spinner:indeterminate {
+        background-clip: border-area;
+        border: var(--thickness) solid transparent;
+        background-origin: border-box;
+      }
+    }
+
+    @supports not (background-clip: border-area) {
+      progress.loading-spinner:indeterminate {
+        --clip-boundary: calc(100% - var(--thickness));
+        mask-image: radial-gradient(
+          farthest-side,
+          transparent var(--clip-boundary),
+          black var(--clip-boundary)
+        );
+      }
+    }
+
+    @media (forced-colors: active) {
+      progress.loading-spinner:indeterminate {
+        forced-color-adjust: none;
+        --spinner-color: CanvasText;
+        --track-color: Canvas;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      progress.loading-spinner:indeterminate {
+        --_used-spinner-duration: 6s;
+        --progress-dash-animation: ;
+        --arc-end: 158deg;
+      }
+    }
+
+    @keyframes progress-spin {
+      to {
+        transform: rotate(1turn);
+      }
+    }
+
+    @keyframes progress-dash {
+      from {
+        --arc-start: 0deg;
+        --arc-end: 3deg;
+      }
+      50% {
+        --arc-start: 100deg;
+        --arc-end: 358deg;
+      }
+      to {
+        --arc-start: 360deg;
+        --arc-end: 363deg;
+      }
+    }
+
+    @keyframes splash-float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="trustvly-splash" role="status" aria-live="polite">
+    <div class="splash-emblem">
+      <img src="icons/Icon-192.png" alt="Trustvly Logo" width="76" height="76">
+    </div>
+    <h1 class="splash-title">Trustvly</h1>
+    <p class="splash-tag">Debt Freedom · Wealth Clarity</p>
+    <progress aria-label="Loading Trustvly" class="loading-spinner"></progress>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('trustvly-splash');
+      if (!splash) return;
+      splash.classList.add('is-hidden');
+      var anims = typeof splash.getAnimations === 'function' ? splash.getAnimations() : [];
+      if (anims.length === 0) {
+        splash.remove();
+        return;
+      }
+      splash.addEventListener('transitionend', function () {
+        splash.remove();
+      }, { once: true });
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 

@@ -8,7 +8,7 @@ import 'core/network/api_client.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'cubits/dhanflow_cubit.dart';
 import 'repositories/dhanflow_repository.dart';
-import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/splash/splash_screen.dart';
 import 'services/local_storage_service.dart';
 
 Future<void> main() async {
@@ -53,7 +53,7 @@ class DhanflowApp extends StatelessWidget {
         title: 'Trustvly',
         debugShowCheckedModeBanner: false,
         theme: _buildDarkTheme(context),
-        home: const DashboardScreen(),
+        home: const SplashScreen(),
       ),
     );
   }

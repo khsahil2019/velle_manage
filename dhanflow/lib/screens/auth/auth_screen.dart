@@ -581,15 +581,25 @@ void showAccountSheet(BuildContext context) {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(user['name'] as String? ?? 'User', style: AppTextStyles.sectionTitle),
-                  Text(user['email'] as String? ?? '', style: AppTextStyles.caption),
+                  Text(user['name'] as String? ?? 'User',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.sectionTitle),
+                  Text(user['email'] as String? ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption),
                 ],
               ),
             ),
-            StatusChip(
-              text: driver,
-              color: AppColors.accentGreen,
-              bgColor: AppColors.greenDim,
+            const SizedBox(width: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 110),
+              child: StatusChip(
+                text: driver,
+                color: AppColors.accentGreen,
+                bgColor: AppColors.greenDim,
+              ),
             ),
           ],
         ),
@@ -603,20 +613,25 @@ void showAccountSheet(BuildContext context) {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Backend Status', style: AppTextStyles.caption),
-                  Text(
-                    dhanState.syncStatus == CloudSyncStatus.synced
-                        ? '● Synced to Backend'
-                        : dhanState.syncStatus == CloudSyncStatus.syncing
-                            ? '↻ Syncing...'
-                            : dhanState.syncStatus == CloudSyncStatus.error
-                                ? '⚠ Sync Retrying'
-                                : '○ Ready',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: dhanState.syncStatus == CloudSyncStatus.error
-                          ? AppColors.accentAmber
-                          : AppColors.accentGreen,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      dhanState.syncStatus == CloudSyncStatus.synced
+                          ? '● Synced to Backend'
+                          : dhanState.syncStatus == CloudSyncStatus.syncing
+                              ? '↻ Syncing...'
+                              : dhanState.syncStatus == CloudSyncStatus.error
+                                  ? '⚠ Sync Retrying'
+                                  : '○ Ready',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: dhanState.syncStatus == CloudSyncStatus.error
+                            ? AppColors.accentAmber
+                            : AppColors.accentGreen,
+                      ),
                     ),
                   ),
                 ],
@@ -626,6 +641,7 @@ void showAccountSheet(BuildContext context) {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Endpoint', style: AppTextStyles.caption),
+                  const SizedBox(width: 10),
                   Flexible(
                     child: Text(
                       dhanState.appState.settings.apiBaseUrl,
@@ -647,7 +663,10 @@ void showAccountSheet(BuildContext context) {
                     ? null
                     : () => context.read<DhanflowCubit>().pushToCloud(),
                 icon: const Icon(Icons.cloud_upload_outlined, size: 16),
-                label: const Text('Push to Backend'),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Push to Backend'),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -657,7 +676,10 @@ void showAccountSheet(BuildContext context) {
                     ? null
                     : () => context.read<DhanflowCubit>().pullFromCloud(),
                 icon: const Icon(Icons.cloud_download_outlined, size: 16),
-                label: const Text('Pull from Backend'),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Pull from Backend'),
+                ),
               ),
             ),
           ],

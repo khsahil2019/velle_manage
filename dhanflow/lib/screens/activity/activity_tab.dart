@@ -262,7 +262,9 @@ class ActivityTab extends StatelessWidget {
           const Text('Paste backup JSON or pick a .json file from storage',
               style: AppTextStyles.caption),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               OutlinedButton.icon(
                 onPressed: () async {
@@ -278,7 +280,6 @@ class ActivityTab extends StatelessWidget {
                 icon: const Icon(Icons.folder_open_rounded, size: 16),
                 label: const Text('Pick .json File'),
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: () async {
                   final clip = await Clipboard.getData('text/plain');

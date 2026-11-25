@@ -69,48 +69,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
       child: Scaffold(
         appBar: AppBar(
+          titleSpacing: 12,
           title: const Row(
             children: [
-              TrustvlyLogo(size: 36, borderRadius: 11),
+              TrustvlyLogo(size: 34, borderRadius: 10),
               SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Trustvly',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Trustvly',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-                  Text('Debt Freedom · Wealth Clarity',
-                      style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                ],
+                          fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                    ),
+                    Text(
+                      'Debt Freedom · Wealth Clarity',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           actions: [
             BlocBuilder<DhanflowCubit, DhanflowViewState>(
               builder: (context, state) {
+                final narrow = MediaQuery.of(context).size.width < 430;
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _SyncStatusPill(status: state.syncStatus),
+                    _SyncStatusPill(status: state.syncStatus, compact: narrow),
                     if (state.canUndo)
                       IconButton(
                         tooltip: 'Undo last action',
-                        icon: const Icon(Icons.undo_rounded, color: AppColors.accentAmber),
+                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.undo_rounded, color: AppColors.accentAmber, size: 19),
                         onPressed: () => context.read<DhanflowCubit>().undoLastAction(),
                       ),
                     IconButton(
                       tooltip: state.hideBalances ? 'Show amounts' : 'Hide amounts',
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                      padding: EdgeInsets.zero,
                       icon: Icon(
                         state.hideBalances
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
                         color: AppColors.textSecondary,
-                        size: 20,
+                        size: 19,
                       ),
                       onPressed: () => context.read<DhanflowCubit>().toggleHideBalances(),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(right: 12, left: 4),
+                      padding: const EdgeInsets.only(right: 10, left: 4),
                       child: BlocBuilder<AuthCubit, AuthState>(
                         builder: (context, authState) {
                           if (authState is AuthAuthenticated) {
@@ -136,14 +155,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         color: AppColors.accentGreen,
                                       ),
                                     ),
-                                    if (MediaQuery.of(context).size.width >= 500) ...[
+                                    if (MediaQuery.of(context).size.width >= 540) ...[
                                       const SizedBox(width: 6),
-                                      Text(
-                                        (authState.user['name'] as String? ?? 'Account')
-                                            .split(' ')
-                                            .first,
-                                        style: const TextStyle(
-                                            fontSize: 11, fontWeight: FontWeight.w700),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 90),
+                                        child: Text(
+                                          (authState.user['name'] as String? ?? 'Account')
+                                              .split(' ')
+                                              .first,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontSize: 11, fontWeight: FontWeight.w700),
+                                        ),
                                       ),
                                     ],
                                   ],
@@ -155,11 +179,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             style: TextButton.styleFrom(
                               backgroundColor: AppColors.bgCard,
                               foregroundColor: AppColors.textPrimary,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                                 side: const BorderSide(color: AppColors.borderLight),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: narrow ? 9 : 12,
+                                vertical: 6,
+                              ),
                             ),
                             onPressed: () {
                               Navigator.of(context).push(
@@ -167,7 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               );
                             },
                             icon: const Icon(Icons.login_rounded,
-                                size: 15, color: AppColors.accentGreen),
+                                size: 14, color: AppColors.accentGreen),
                             label: const Text('Sign In',
                                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                           );
@@ -295,7 +324,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class _SyncStatusPill extends StatelessWidget {
   final CloudSyncStatus status;
-  const _SyncStatusPill({required this.status});
+  final bool compact;
+  const _SyncStatusPill({required this.status, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -323,24 +353,30 @@ class _SyncStatusPill extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(right: 4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 5),
-            Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: dotColor)),
-          ],
+      child: Tooltip(
+        message: 'Storage: $label',
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: compact ? 7 : 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+              ),
+              if (!compact) ...[
+                const SizedBox(width: 5),
+                Text(label,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: dotColor)),
+              ],
+            ],
+          ),
         ),
       ),
     );
