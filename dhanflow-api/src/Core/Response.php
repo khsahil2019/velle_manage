@@ -61,7 +61,7 @@ class Response {
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With');
         
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
             exit;
         }
     }

@@ -29,6 +29,7 @@ class Database {
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 5,
         ];
 
         if ($this->driver === 'sqlite') {
@@ -38,8 +39,32 @@ class Database {
             return;
         }
 
-        if ($this->driver === 'mysql' && defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
-            $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
+        if ($this->driver === 'pgsql' && str_contains($spec['dsn'], '-pooler.')) {
+            // Neon PgBouncer transaction pooling avoids duplicate named prepared statement collisions when emulated
+            $options[PDO::ATTR_EMULATE_PREPARES] = true;
+        }
+
+        if ($this->driver === 'mysql') {
+            if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci";
+            }
+            $sslFlag = strtolower(self::readEnv('DB_SSL') ?: self::readEnv('DB_SSLMODE'));
+            $needsSsl = in_array($sslFlag, ['1', 'true', 'yes', 'require', 'required'], true)
+                || str_contains($spec['dsn'], 'tidbcloud.com')
+                || $spec['source'] === 'TIDB_HOST';
+            if ($needsSsl) {
+                if (defined('PDO::MYSQL_ATTR_SSL_CA')) {
+                    foreach (['/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt', '/etc/ssl/cert.pem'] as $caPath) {
+                        if (is_file($caPath)) {
+                            $options[PDO::MYSQL_ATTR_SSL_CA] = $caPath;
+                            break;
+                        }
+                    }
+                }
+                if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                }
+            }
         }
 
         $this->pdo = new PDO($spec['dsn'], $spec['user'], $spec['pass'], $options);
@@ -120,10 +145,12 @@ class Database {
                 $pass = urldecode((string)($parts['pass'] ?? ''));
                 parse_str((string)($parts['query'] ?? ''), $q);
                 $ssl  = $q['sslmode'] ?? (self::readEnv('DB_SSLMODE') ?: 'require');
+                $dsn  = "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}";
+                $pass = self::applyNeonEndpointPassword($host, $pass, (string)($q['options'] ?? ''));
                 return [
                     'configured' => $host !== '' && $db !== '' && $user !== '',
                     'driver'     => 'pgsql',
-                    'dsn'        => "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}",
+                    'dsn'        => $dsn,
                     'user'       => $user,
                     'pass'       => $pass,
                     'source'     => $urlKey,
@@ -146,16 +173,16 @@ class Database {
             }
         }
 
-        [$host, $hostKey] = self::firstEnv(['DB_HOST', 'PGHOST', 'MYSQLHOST']);
-        [$name]            = self::firstEnv(['DB_NAME', 'PGDATABASE', 'MYSQLDATABASE']);
-        [$user]            = self::firstEnv(['DB_USER', 'PGUSER', 'MYSQLUSER']);
-        [$pass]            = self::firstEnv(['DB_PASS', 'PGPASSWORD', 'MYSQLPASSWORD', 'DB_PASSWORD']);
+        [$host, $hostKey] = self::firstEnv(['DB_HOST', 'PGHOST', 'MYSQLHOST', 'TIDB_HOST']);
+        [$name]            = self::firstEnv(['DB_NAME', 'PGDATABASE', 'MYSQLDATABASE', 'TIDB_DATABASE']);
+        [$user]            = self::firstEnv(['DB_USER', 'PGUSER', 'MYSQLUSER', 'TIDB_USER']);
+        [$pass]            = self::firstEnv(['DB_PASS', 'PGPASSWORD', 'MYSQLPASSWORD', 'DB_PASSWORD', 'TIDB_PASSWORD']);
 
         $isPg = $explicitDriver === 'pgsql' || $hostKey === 'PGHOST';
         $driver = $isPg ? 'pgsql' : 'mysql';
-        [$port] = self::firstEnv(['DB_PORT', 'PGPORT', 'MYSQLPORT']);
+        [$port] = self::firstEnv(['DB_PORT', 'PGPORT', 'MYSQLPORT', 'TIDB_PORT']);
         if ($port === '') {
-            $port = $driver === 'pgsql' ? '5432' : '3306';
+            $port = $driver === 'pgsql' ? '5432' : ($hostKey === 'TIDB_HOST' ? '4000' : '3306');
         }
 
         if ($host === '' || $name === '' || $user === '') {
@@ -170,9 +197,19 @@ class Database {
         }
 
         if ($driver === 'pgsql') {
-            $ssl = self::readEnv('DB_SSLMODE') ?: 'require';
-            $dsn = "pgsql:host={$host};port={$port};dbname={$name};sslmode={$ssl}";
+            $ssl  = self::readEnv('DB_SSLMODE') ?: 'require';
+            $dsn  = "pgsql:host={$host};port={$port};dbname={$name};sslmode={$ssl}";
+            $pass = self::applyNeonEndpointPassword($host, $pass);
         } else {
+            if (str_contains($host, ':')) {
+                [$parsedHost, $parsedPort] = explode(':', $host, 2);
+                if ($parsedHost !== '' && $parsedPort !== '') {
+                    $host = $parsedHost;
+                    if (!self::readEnv('DB_PORT') && !self::readEnv('MYSQLPORT') && !self::readEnv('TIDB_PORT')) {
+                        $port = $parsedPort;
+                    }
+                }
+            }
             $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
         }
 
@@ -184,6 +221,26 @@ class Database {
             'pass'       => $pass,
             'source'     => $hostKey ?: 'DB_HOST',
         ];
+    }
+
+    /**
+     * Older libpq builds (such as vercel-php serverless runtimes) may omit TLS SNI
+     * when connecting to Neon. Prepending endpoint=<id>$<password> passes the Neon
+     * endpoint ID cleanly without relying on DSN URL-escaping quirks.
+     */
+    private static function applyNeonEndpointPassword(string $host, string $pass, string $options = ''): string {
+        if ($host === '' || $pass === '' || !str_contains(strtolower($host), '.neon.tech')) {
+            return $pass;
+        }
+        if (str_starts_with($pass, 'endpoint=') || str_contains($options, 'endpoint=') || str_contains($options, 'project=')) {
+            return $pass;
+        }
+        $firstLabel = explode('.', $host)[0] ?? '';
+        $endpointId = preg_replace('/-pooler$/', '', $firstLabel) ?: $firstLabel;
+        if ($endpointId === '') {
+            return $pass;
+        }
+        return "endpoint={$endpointId}\${$pass}";
     }
 
     public static function getInstance(): self {
