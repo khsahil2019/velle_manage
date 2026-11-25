@@ -60,9 +60,9 @@ class Auth {
     public static function generateTokenPair(string $userId): array {
         self::init();
         return [
-            'access_token'  => self::encodeJWT(['sub' => $userId, 'exp' => time() + 900, 'type' => 'access']),
-            'refresh_token' => self::encodeJWT(['sub' => $userId, 'exp' => time() + 2592000, 'type' => 'refresh']),
-            'expires_in'    => 900,
+            'access_token'  => self::encodeJWT(['sub' => $userId, 'exp' => time() + 2592000, 'type' => 'access']),
+            'refresh_token' => self::encodeJWT(['sub' => $userId, 'exp' => time() + 315360000, 'type' => 'refresh']),
+            'expires_in'    => 2592000,
         ];
     }
 

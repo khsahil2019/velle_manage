@@ -2,9 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../widgets/common/dhan_ui.dart';
+import '../dashboard/dashboard_screen.dart';
+
+/// Mandatory Auth Gate: opens Sign In / Create Account on launch until authenticated,
+/// then stays permanently inside DashboardScreen across app restarts.
+class AuthGateScreen extends StatelessWidget {
+  const AuthGateScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        if (authState is AuthAuthenticated) {
+          return const DashboardScreen();
+        }
+        return const AuthScreen(allowDismiss: false);
+      },
+    );
+  }
+}
 
 /// Dedicated Sign In & Sign Up Screen with Vercel PHP Backend Storage integration
 class AuthScreen extends StatefulWidget {
@@ -91,8 +111,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDark;
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.bgPrimary,
       body: Stack(
         children: [
           // Subtle ambient fintech background glow
@@ -144,37 +165,92 @@ class _AuthScreenState extends State<AuthScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (widget.allowDismiss)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: IconButton(
-                                icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
-                                onPressed: () => Navigator.of(context).pop(false),
+                          // Top Quick Language & Theme Controls
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              InkWell(
+                                onTap: () => context.read<DhanflowCubit>().toggleLanguage(),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: context.bgCard,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: context.border),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.translate_rounded,
+                                          size: 14, color: AppColors.accentGreen),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        context.isHindi ? 'हिन्दी → English' : 'English → हिन्दी',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          const Center(
-                            child: TrustvlyLogo(size: 68, borderRadius: 20),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: isDark ? 'White Mode' : 'Dark Mode',
+                                    icon: Icon(
+                                      isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                      size: 20,
+                                      color: isDark ? AppColors.accentAmber : const Color(0xFF6366F1),
+                                    ),
+                                    onPressed: () => context.read<DhanflowCubit>().toggleThemeMode(),
+                                  ),
+                                  if (widget.allowDismiss)
+                                    IconButton(
+                                      icon: Icon(Icons.close_rounded, color: context.textSecondary),
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Trustvly',
+                          const SizedBox(height: 12),
+                          const Center(
+                            child: TrustvlyLogo(size: 72, floating: true),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            context.tr('auth_welcome'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 26,
+                              fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: -0.7,
+                              letterSpacing: -0.6,
+                              color: context.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Debt Freedom · Cloud Vault Storage · Bullion Intelligence',
+                          const SizedBox(height: 6),
+                          Text(
+                            context.tr('auth_subtitle'),
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 12, color: context.textSecondary),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 10),
+                          Center(
+                            child: StatusChip(
+                              text: context.tr('auth_permanent_badge'),
+                              color: AppColors.accentGreen,
+                              bgColor: context.greenDim,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
                           DhanCard(
                             padding: const EdgeInsets.all(20),
-                            borderColor: AppColors.borderLight,
+                            borderColor: context.borderLight,
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -184,14 +260,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      color: AppColors.bgPrimary,
+                                      color: isDark ? AppColors.bgPrimary : AppColors.lightBgCard2,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: AppColors.border),
+                                      border: Border.all(color: context.border),
                                     ),
                                     child: Row(
                                       children: [
                                         _AuthTabButton(
-                                          label: 'Sign In',
+                                          label: context.tr('auth_signin'),
                                           selected: !_isSignUp,
                                           onTap: () {
                                             context.read<AuthCubit>().clearError();
@@ -199,7 +275,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                           },
                                         ),
                                         _AuthTabButton(
-                                          label: 'Create Account',
+                                          label: context.tr('auth_signup'),
                                           selected: _isSignUp,
                                           onTap: () {
                                             context.read<AuthCubit>().clearError();
@@ -215,9 +291,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                     TextFormField(
                                       controller: _nameCtrl,
                                       textCapitalization: TextCapitalization.words,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Full Name',
-                                        prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
+                                      decoration: InputDecoration(
+                                        labelText: context.tr('auth_fullname'),
+                                        prefixIcon: const Icon(Icons.person_outline_rounded, size: 18),
                                       ),
                                       validator: (v) {
                                         if (_isSignUp && (v == null || v.trim().length < 2)) {
@@ -232,9 +308,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                   TextFormField(
                                     controller: _emailCtrl,
                                     keyboardType: TextInputType.emailAddress,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email Address',
-                                      prefixIcon: Icon(Icons.alternate_email_rounded, size: 18),
+                                    decoration: InputDecoration(
+                                      labelText: context.tr('auth_email'),
+                                      prefixIcon: const Icon(Icons.alternate_email_rounded, size: 18),
                                     ),
                                     validator: (v) {
                                       if (v == null || !v.contains('@') || !v.contains('.')) {
@@ -249,7 +325,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     controller: _passCtrl,
                                     obscureText: _obscurePassword,
                                     decoration: InputDecoration(
-                                      labelText: 'Password',
+                                      labelText: context.tr('auth_password'),
                                       prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18),
                                       suffixIcon: IconButton(
                                         icon: Icon(
@@ -275,22 +351,26 @@ class _AuthScreenState extends State<AuthScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: AppColors.bgHover,
+                                        color: isDark ? AppColors.bgHover : AppColors.lightBgCard2,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: AppColors.border),
+                                        border: Border.all(color: context.border),
                                       ),
                                       child: Column(
                                         children: [
                                           SwitchListTile.adaptive(
                                             contentPadding: EdgeInsets.zero,
                                             dense: true,
-                                            title: const Text(
-                                              'Sync current device ledger to new account',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                            title: Text(
+                                              context.tr('auth_keep_local'),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: context.textPrimary,
+                                              ),
                                             ),
-                                            subtitle: const Text(
-                                              'Keeps your active cards, loans & Gullak entries',
-                                              style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                                            subtitle: Text(
+                                              context.tr('auth_keep_local_sub'),
+                                              style: TextStyle(fontSize: 10, color: context.textTertiary),
                                             ),
                                             value: _uploadCurrentLocalData,
                                             activeTrackColor: AppColors.accentGreen,
@@ -301,9 +381,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                             SwitchListTile.adaptive(
                                               contentPadding: EdgeInsets.zero,
                                               dense: true,
-                                              title: const Text(
-                                                'Pre-load initial demo template',
-                                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                              title: Text(
+                                                context.tr('auth_load_demo'),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: context.textPrimary,
+                                                ),
                                               ),
                                               value: _seedInitialData,
                                               activeTrackColor: AppColors.accentBlue,
@@ -320,7 +404,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: AppColors.roseDim.withValues(alpha: 0.6),
+                                        color: context.roseDim.withValues(alpha: 0.6),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                             color: AppColors.accentRose.withValues(alpha: 0.5)),
@@ -333,8 +417,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                           Expanded(
                                             child: Text(
                                               errorMsg,
-                                              style: const TextStyle(
-                                                  fontSize: 11, color: AppColors.textPrimary),
+                                              style: TextStyle(
+                                                  fontSize: 11, color: context.textPrimary),
                                             ),
                                           ),
                                         ],
@@ -348,15 +432,17 @@ class _AuthScreenState extends State<AuthScreen> {
                                     child: ElevatedButton(
                                       onPressed: isLoading ? null : _submit,
                                       child: isLoading
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               width: 20,
                                               height: 20,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                color: Colors.black,
+                                                color: isDark ? Colors.black : Colors.white,
                                               ),
                                             )
-                                          : Text(_isSignUp ? 'Create Account & Sync' : 'Sign In'),
+                                          : Text(_isSignUp
+                                              ? context.tr('auth_signup_btn')
+                                              : context.tr('auth_signin_btn')),
                                     ),
                                   ),
 
@@ -366,11 +452,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: (_healthStatus?.isFullyReady == true
-                                                ? AppColors.greenDim
+                                                ? context.greenDim
                                                 : (_healthStatus?.reachable == true
-                                                    ? AppColors.amberDim
-                                                    : AppColors.roseDim))
-                                            .withValues(alpha: 0.35),
+                                                    ? context.amberDim
+                                                    : context.roseDim))
+                                            .withValues(alpha: 0.55),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                           color: (_healthStatus?.isFullyReady == true
@@ -404,9 +490,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                               _checkingHealth
                                                   ? 'Checking Vercel PHP API status...'
                                                   : (_healthStatus?.message ?? ''),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 10.5,
-                                                color: AppColors.textSecondary,
+                                                color: context.textSecondary,
                                               ),
                                             ),
                                           ),
@@ -423,11 +509,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                           ? Icons.keyboard_arrow_up_rounded
                                           : Icons.settings_ethernet_rounded,
                                       size: 15,
-                                      color: AppColors.textTertiary,
+                                      color: context.textTertiary,
                                     ),
-                                    label: const Text(
-                                      'Backend API Endpoint & Test',
-                                      style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                                    label: Text(
+                                      context.tr('auth_api_toggle'),
+                                      style: TextStyle(fontSize: 11, color: context.textTertiary),
                                     ),
                                   ),
                                   if (_showAdvancedUrl) ...[
@@ -468,10 +554,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(height: 14),
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text(
+                              child: Text(
                                 'Continue in Offline Local Mode →',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: context.textSecondary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -516,7 +602,7 @@ class _AuthTabButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: selected ? Colors.black : AppColors.textSecondary,
+              color: selected ? Colors.black : context.textSecondary,
             ),
           ),
         ),
@@ -535,11 +621,12 @@ void showAccountSheet(BuildContext context) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Offline Local Mode', style: AppTextStyles.sectionTitle),
+          Text('Offline Local Mode',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: ctx.textPrimary)),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Your ledger is currently saved on this device only. Sign in or create an account to back up and sync automatically with the PHP backend database.',
-            style: AppTextStyles.body,
+            style: TextStyle(fontSize: 13, color: ctx.textSecondary),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
@@ -566,7 +653,7 @@ void showAccountSheet(BuildContext context) {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: AppColors.greenDim,
+              backgroundColor: ctx.greenDim,
               child: Text(
                 authState.initials,
                 style: const TextStyle(
@@ -584,11 +671,12 @@ void showAccountSheet(BuildContext context) {
                   Text(user['name'] as String? ?? 'User',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.sectionTitle),
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w800, color: ctx.textPrimary)),
                   Text(user['email'] as String? ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.caption),
+                      style: TextStyle(fontSize: 11, color: ctx.textSecondary)),
                 ],
               ),
             ),
@@ -598,21 +686,22 @@ void showAccountSheet(BuildContext context) {
               child: StatusChip(
                 text: driver,
                 color: AppColors.accentGreen,
-                bgColor: AppColors.greenDim,
+                bgColor: ctx.greenDim,
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
         DhanCard(
-          backgroundColor: AppColors.bgHover,
+          backgroundColor: ctx.isDark ? AppColors.bgHover : AppColors.lightBgCard2,
           padding: const EdgeInsets.all(12),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Backend Status', style: AppTextStyles.caption),
+                  Text('Backend Status',
+                      style: TextStyle(fontSize: 11, color: ctx.textSecondary)),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
@@ -640,13 +729,13 @@ void showAccountSheet(BuildContext context) {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Endpoint', style: AppTextStyles.caption),
+                  Text('Endpoint', style: TextStyle(fontSize: 11, color: ctx.textSecondary)),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
                       dhanState.appState.settings.apiBaseUrl,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 11, color: ctx.textSecondary),
                     ),
                   ),
                 ],

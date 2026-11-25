@@ -450,7 +450,7 @@ class _BullionTabState extends State<BullionTab> {
     final vaultNameCtrl = TextEditingController(text: 'Physical Locker');
     DateTime metalDate = DateTime.now();
 
-    final categories = const [
+    const categories = [
       ('diamond', 'Diamond', Icons.diamond_outlined),
       ('jewelry', 'Jewelry', Icons.auto_awesome_outlined),
       ('gold', 'Gold Item', Icons.workspace_premium_rounded),

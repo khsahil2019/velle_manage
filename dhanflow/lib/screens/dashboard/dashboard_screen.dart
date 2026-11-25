@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/dhanflow_cubit.dart';
-import '../activity/activity_tab.dart';
-import '../auth/auth_screen.dart';
 import '../bullion/bullion_tab.dart';
 import '../debt/debt_tab.dart';
 import '../overview/overview_tab.dart';
+import '../profile/profile_screen.dart';
 import '../recoveries/recoveries_tab.dart';
 import '../../widgets/common/dhan_ui.dart';
 
@@ -20,10 +20,25 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _tabIndex = 0;
+  final ValueNotifier<int> _profileSubTab = ValueNotifier<int>(0);
+
+  @override
+  void dispose() {
+    _profileSubTab.dispose();
+    super.dispose();
+  }
+
+  void _openTab(int index, {int profileSubTab = 0}) {
+    if (index == 4) {
+      _profileSubTab.value = profileSubTab;
+    }
+    setState(() => _tabIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 860;
+    final isDark = context.isDark;
 
     return MultiBlocListener(
       listeners: [
@@ -33,18 +48,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(SnackBar(
-                  content: Text(state.flashMessage!),
-                  backgroundColor: AppColors.bgCard2,
+                  content: Text(
+                    state.flashMessage!,
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: context.bgCard2,
                   behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 ));
               context.read<DhanflowCubit>().clearMessages();
             } else if (state.errorMessage != null) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(SnackBar(
-                  content: Text(state.errorMessage!),
+                  content: Text(
+                    state.errorMessage!,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
                   backgroundColor: AppColors.accentRose,
                   behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 ));
               context.read<DhanflowCubit>().clearMessages();
             }
@@ -68,12 +94,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ],
       child: Scaffold(
+        extendBody: false,
         appBar: AppBar(
           titleSpacing: 12,
-          title: const Row(
+          title: Row(
             children: [
-              TrustvlyLogo(size: 34, borderRadius: 10),
-              SizedBox(width: 10),
+              const TrustvlyLogo(size: 34, borderRadius: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,13 +111,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        color: context.textPrimary,
+                      ),
                     ),
                     Text(
-                      'Debt Freedom · Wealth Clarity',
+                      context.tr('app_tagline'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 10, color: context.textSecondary),
                     ),
                   ],
                 ),
@@ -109,15 +140,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       IconButton(
                         tooltip: 'Undo last action',
                         visualDensity: VisualDensity.compact,
-                        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                         icon: const Icon(Icons.undo_rounded, color: AppColors.accentAmber, size: 19),
                         onPressed: () => context.read<DhanflowCubit>().undoLastAction(),
                       ),
                     IconButton(
+                      tooltip: context.isHindi ? 'Switch to English' : 'हिन्दी में बदलें',
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: EdgeInsets.zero,
+                      icon: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: context.blueDim.withValues(alpha: isDark ? 0.5 : 0.7),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          context.isHindi ? 'हि' : 'EN',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.accentBlue,
+                          ),
+                        ),
+                      ),
+                      onPressed: () => context.read<DhanflowCubit>().toggleLanguage(),
+                    ),
+                    IconButton(
                       tooltip: state.hideBalances ? 'Show amounts' : 'Hide amounts',
                       visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       padding: EdgeInsets.zero,
                       icon: Icon(
                         state.hideBalances
@@ -129,13 +183,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onPressed: () => context.read<DhanflowCubit>().toggleHideBalances(),
                     ),
                     IconButton(
-                      tooltip: context.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                      tooltip: isDark ? 'White Mode' : 'Dark Mode',
                       visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       padding: EdgeInsets.zero,
                       icon: Icon(
-                        context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                        color: context.isDark ? AppColors.accentAmber : const Color(0xFF6366F1),
+                        isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        color: isDark ? AppColors.accentAmber : const Color(0xFF6366F1),
                         size: 19,
                       ),
                       onPressed: () => context.read<DhanflowCubit>().toggleThemeMode(),
@@ -144,73 +198,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.only(right: 10, left: 4),
                       child: BlocBuilder<AuthCubit, AuthState>(
                         builder: (context, authState) {
-                          if (authState is AuthAuthenticated) {
-                            return InkWell(
-                              onTap: () => showAccountSheet(context),
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.greenDim,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: AppColors.accentGreen.withValues(alpha: 0.4)),
+                          final initials =
+                              authState is AuthAuthenticated ? authState.initials : 'P';
+                          return InkWell(
+                            onTap: () => _openTab(4, profileSubTab: 0),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: context.greenDim,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.accentGreen.withValues(alpha: 0.4),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      authState.initials,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.accentGreen,
-                                      ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.accentGreen,
                                     ),
-                                    if (MediaQuery.of(context).size.width >= 540) ...[
-                                      const SizedBox(width: 6),
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 90),
-                                        child: Text(
-                                          (authState.user['name'] as String? ?? 'Account')
-                                              .split(' ')
-                                              .first,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              fontSize: 11, fontWeight: FontWeight.w700),
+                                  ),
+                                  if (MediaQuery.of(context).size.width >= 540 &&
+                                      authState is AuthAuthenticated) ...[
+                                    const SizedBox(width: 6),
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 86),
+                                      child: Text(
+                                        (authState.user['name'] as String? ?? 'Profile')
+                                            .split(' ')
+                                            .first,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.textPrimary,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ],
-                                ),
-                              ),
-                            );
-                          }
-                          return TextButton.icon(
-                            style: TextButton.styleFrom(
-                              backgroundColor: context.bgCard,
-                              foregroundColor: context.textPrimary,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: context.borderLight),
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: narrow ? 9 : 12,
-                                vertical: 6,
+                                ],
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const AuthScreen()),
-                              );
-                            },
-                            icon: const Icon(Icons.login_rounded,
-                                size: 14, color: AppColors.accentGreen),
-                            label: const Text('Sign In',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                           );
                         },
                       ),
@@ -236,35 +270,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: NavigationRail(
                   backgroundColor: context.bgCard,
                   selectedIndex: _tabIndex,
-                  onDestinationSelected: (i) => setState(() => _tabIndex = i),
+                  onDestinationSelected: (i) => _openTab(i),
                   labelType: NavigationRailLabelType.all,
                   indicatorColor: context.greenDim,
-                  destinations: const [
+                  destinations: [
                     NavigationRailDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.accentGreen),
-                      label: Text('Overview'),
+                      icon: const Icon(Icons.dashboard_outlined),
+                      selectedIcon: Icon(
+                        Icons.dashboard_rounded,
+                        color: isDark ? AppColors.accentGreen : const Color(0xFF059669),
+                      ),
+                      label: Text(context.tr('nav_home')),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.credit_card_outlined),
-                      selectedIcon: Icon(Icons.credit_card_rounded, color: AppColors.accentGreen),
-                      label: Text('Debt'),
+                      icon: const Icon(Icons.credit_card_outlined),
+                      selectedIcon: Icon(
+                        Icons.credit_card_rounded,
+                        color: isDark ? AppColors.accentGreen : const Color(0xFF059669),
+                      ),
+                      label: Text(context.tr('nav_debt')),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.handshake_outlined),
-                      selectedIcon: Icon(Icons.handshake_rounded, color: AppColors.accentGreen),
-                      label: Text('Kul Lena'),
+                      icon: const Icon(Icons.handshake_outlined),
+                      selectedIcon: Icon(
+                        Icons.handshake_rounded,
+                        color: isDark ? AppColors.accentGreen : const Color(0xFF059669),
+                      ),
+                      label: Text(context.tr('nav_kullena')),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.workspace_premium_outlined),
-                      selectedIcon:
-                          Icon(Icons.workspace_premium_rounded, color: AppColors.accentAmber),
-                      label: Text('Bullion'),
+                      icon: const Icon(Icons.diamond_outlined),
+                      selectedIcon: const Icon(Icons.diamond_rounded, color: AppColors.accentAmber),
+                      label: Text(context.tr('nav_assets')),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.history_outlined),
-                      selectedIcon: Icon(Icons.history_rounded, color: AppColors.accentGreen),
-                      label: Text('Activity'),
+                      icon: const Icon(Icons.person_outline_rounded),
+                      selectedIcon: Icon(
+                        Icons.person_rounded,
+                        color: isDark ? AppColors.accentBlue : const Color(0xFF2563EB),
+                      ),
+                      label: Text(context.tr('nav_profile')),
                     ),
                   ],
                 ),
@@ -276,11 +321,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: IndexedStack(
                     index: _tabIndex,
                     children: [
-                      OverviewTab(onNavigateTab: (i) => setState(() => _tabIndex = i)),
+                      OverviewTab(
+                        onNavigateTab: (i) {
+                          if (i == 4) {
+                            _openTab(4, profileSubTab: 1);
+                          } else {
+                            _openTab(i);
+                          }
+                        },
+                      ),
                       const DebtTab(),
                       const RecoveriesTab(),
-                      const BullionTab(),
-                      const ActivityTab(),
+                      const AssetsTab(),
+                      ProfileScreen(subTabNotifier: _profileSubTab),
                     ],
                   ),
                 ),
@@ -290,45 +343,149 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         bottomNavigationBar: isWide
             ? null
-            : Container(
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: context.border, width: 1)),
-                ),
-                child: NavigationBar(
-                  backgroundColor: context.bgCard,
-                  indicatorColor: context.greenDim,
-                  selectedIndex: _tabIndex,
-                  onDestinationSelected: (i) => setState(() => _tabIndex = i),
-                  destinations: [
-                    NavigationDestination(
-                      icon: const Icon(Icons.dashboard_outlined),
-                      selectedIcon: Icon(Icons.dashboard_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
-                      label: 'Overview',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.credit_card_outlined),
-                      selectedIcon: Icon(Icons.credit_card_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
-                      label: 'Debt',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.handshake_outlined),
-                      selectedIcon: Icon(Icons.handshake_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
-                      label: 'Kul Lena',
-                    ),
-                    const NavigationDestination(
-                      icon: Icon(Icons.workspace_premium_outlined),
-                      selectedIcon:
-                          Icon(Icons.workspace_premium_rounded, color: AppColors.accentAmber),
-                      label: 'Bullion',
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.history_outlined),
-                      selectedIcon: Icon(Icons.history_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
-                      label: 'Activity',
-                    ),
-                  ],
-                ),
+            : _TrustvlyDockedNavBar(
+                currentIndex: _tabIndex,
+                onTap: (i) => _openTab(i),
               ),
+      ),
+    );
+  }
+}
+
+/// Clean docked bottom navigation bar anchored flush to the bottom edge (zero floating/hanging gap).
+class _TrustvlyDockedNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _TrustvlyDockedNavBar({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final emerald = isDark ? AppColors.accentGreen : const Color(0xFF059669);
+    final blue = isDark ? AppColors.accentBlue : const Color(0xFF2563EB);
+
+    final items = [
+      (
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard_rounded,
+        label: context.tr('nav_home'),
+        color: emerald,
+      ),
+      (
+        icon: Icons.credit_card_outlined,
+        activeIcon: Icons.credit_card_rounded,
+        label: context.tr('nav_debt'),
+        color: emerald,
+      ),
+      (
+        icon: Icons.handshake_outlined,
+        activeIcon: Icons.handshake_rounded,
+        label: context.tr('nav_kullena'),
+        color: emerald,
+      ),
+      (
+        icon: Icons.diamond_outlined,
+        activeIcon: Icons.diamond_rounded,
+        label: context.tr('nav_assets'),
+        color: AppColors.accentAmber,
+      ),
+      (
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: context.tr('nav_profile'),
+        color: blue,
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : Colors.white,
+        border: Border(
+          top: BorderSide(color: context.border, width: 1),
+        ),
+        boxShadow: isDark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0A0F172A),
+                  blurRadius: 12,
+                  offset: Offset(0, -3),
+                ),
+              ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 62,
+          child: Row(
+            children: items.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final item = entry.value;
+              final selected = idx == currentIndex;
+
+              return Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onTap(idx),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Sleek flush top active indicator bar
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          width: selected ? 32 : 0,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: selected ? item.color : Colors.transparent,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? item.color.withValues(alpha: isDark ? 0.16 : 0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            selected ? item.activeIcon : item.icon,
+                            size: 20,
+                            color: selected ? item.color : context.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              item.label,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                                color: selected ? item.color : context.textTertiary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -347,19 +504,19 @@ class _SyncStatusPill extends StatelessWidget {
     switch (status) {
       case CloudSyncStatus.synced:
         dotColor = AppColors.accentGreen;
-        label = 'Synced';
+        label = context.tr('synced');
         break;
       case CloudSyncStatus.syncing:
         dotColor = AppColors.accentAmber;
-        label = 'Syncing';
+        label = context.tr('syncing');
         break;
       case CloudSyncStatus.error:
         dotColor = AppColors.accentRose;
-        label = 'Retry';
+        label = context.tr('retry');
         break;
       case CloudSyncStatus.offline:
         dotColor = context.textTertiary;
-        label = 'Local';
+        label = context.tr('local');
         break;
     }
 

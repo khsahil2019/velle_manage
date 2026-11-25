@@ -121,6 +121,11 @@ class DhanflowApp extends StatelessWidget {
       ),
       dividerTheme: const DividerThemeData(
           color: AppColors.lightBorder, thickness: 1, space: 0),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.lightBgCard2,
+        side: const BorderSide(color: AppColors.lightBorder),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightBgCard2,

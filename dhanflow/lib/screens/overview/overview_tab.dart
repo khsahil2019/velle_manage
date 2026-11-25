@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/inr_formatter.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../widgets/common/dhan_ui.dart';
@@ -29,7 +30,7 @@ class OverviewTab extends StatelessWidget {
             : 100.0;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
           children: [
             // ── HERO FINANCIAL RADAR COMMAND CONSOLE ──────────────────
             _HeroRadarConsole(
@@ -47,7 +48,7 @@ class OverviewTab extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.flash_on_rounded,
-                    label: 'Pay Due',
+                    label: context.tr('ov_pay_due'),
                     color: AppColors.accentGreen,
                     onTap: () => onNavigateTab(1),
                   ),
@@ -56,7 +57,7 @@ class OverviewTab extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.add_circle_outline_rounded,
-                    label: 'Add Spend',
+                    label: context.tr('ov_add_spend'),
                     color: AppColors.accentRose,
                     onTap: () => onNavigateTab(1),
                   ),
@@ -65,7 +66,7 @@ class OverviewTab extends StatelessWidget {
                 Expanded(
                   child: _QuickActionButton(
                     icon: Icons.handshake_outlined,
-                    label: 'Kul Lena',
+                    label: context.tr('ov_kullena'),
                     color: AppColors.accentBlue,
                     onTap: () => onNavigateTab(2),
                   ),
@@ -73,8 +74,8 @@ class OverviewTab extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _QuickActionButton(
-                    icon: Icons.workspace_premium_rounded,
-                    label: 'Buy Gold',
+                    icon: Icons.diamond_outlined,
+                    label: context.tr('ov_add_asset'),
                     color: AppColors.accentAmber,
                     onTap: () => onNavigateTab(3),
                   ),
@@ -87,51 +88,51 @@ class OverviewTab extends StatelessWidget {
             Builder(builder: (context) {
               final tiles = [
                 KPITile(
-                  label: 'Kul Dena (Gross)',
+                  label: context.tr('ov_kul_dena'),
                   value: kpi.kulDenaFormatted,
-                  subtitle: 'Cards + Loans + Payables',
+                  subtitle: context.tr('ov_kul_dena_sub'),
                   accentColor: AppColors.accentRose,
                   icon: Icons.arrow_upward_rounded,
                   hidden: hidden,
                   onTap: () => onNavigateTab(1),
                 ),
                 KPITile(
-                  label: 'Kul Lena (Receivable)',
+                  label: context.tr('ov_kul_lena'),
                   value: kpi.kulLenaFormatted,
                   subtitle:
-                      '${state.appState.recoveries.where((r) => !r.isSettled).length} active borrowers',
+                      '${state.appState.recoveries.where((r) => !r.isSettled).length} ${context.tr('rec_active').toLowerCase()}',
                   accentColor: AppColors.accentGreen,
                   icon: Icons.arrow_downward_rounded,
                   hidden: hidden,
                   onTap: () => onNavigateTab(2),
                 ),
                 KPITile(
-                  label: 'Net Before Bullion',
+                  label: context.tr('ov_net_before_assets'),
                   value: kpi.asalNetDebtFormatted,
-                  subtitle: 'Kul Dena − Kul Lena',
+                  subtitle: context.tr('ov_net_before_sub'),
                   accentColor: kpi.isNetPositive ? AppColors.accentGreen : AppColors.accentAmber,
                   icon: Icons.balance_rounded,
                   hidden: hidden,
                 ),
                 KPITile(
-                  label: 'Bullion Cost Basis',
-                  value: kpi.gullakAssetFormatted,
-                  subtitle: 'Pre-GST acquisition basis',
+                  label: context.tr('ov_my_assets'),
+                  value: kpi.totalAssetsFormatted,
+                  subtitle: context.tr('ov_my_assets_sub'),
                   accentColor: AppColors.accentAmber,
-                  icon: Icons.workspace_premium_rounded,
+                  icon: Icons.diamond_outlined,
                   hidden: hidden,
                   onTap: () => onNavigateTab(3),
                 ),
                 KPITile(
-                  label: 'True Net Position',
+                  label: context.tr('ov_true_net_tile'),
                   value: kpi.trueNetFormatted,
-                  subtitle: 'After bullion cost basis',
+                  subtitle: context.tr('ov_true_net_sub'),
                   accentColor: kpi.isTruePositive ? AppColors.accentGreen : AppColors.accentRose,
                   icon: Icons.shield_outlined,
                   hidden: hidden,
                 ),
                 KPITile(
-                  label: 'Pocket Card Debt',
+                  label: context.tr('ov_pocket_debt'),
                   value: kpi.pocketDebtFormatted,
                   subtitle: 'Excl. SBI (${kpi.clearedCardsCount}/${kpi.totalCardsCount} cleared)',
                   accentColor: AppColors.accentBlue,
@@ -159,7 +160,7 @@ class OverviewTab extends StatelessWidget {
             }),
             const SizedBox(height: 6),
             Text(
-              'Note: Bullion Cost Basis reflects pre-GST acquisition value, protecting conservative asset reserves.',
+              context.tr('ov_note'),
               style: TextStyle(fontSize: 10, color: context.textTertiary),
             ),
             const SizedBox(height: 18),
@@ -202,7 +203,7 @@ class OverviewTab extends StatelessWidget {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
-                              'Debt Freedom Engine',
+                              context.tr('ov_strategy_title'),
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
@@ -251,9 +252,9 @@ class OverviewTab extends StatelessWidget {
 
             // ── SMART FINANCIAL ALERTS ───────────────────────────────
             if (kpi.smartAlerts.isNotEmpty) ...[
-              const SectionHeader(
-                title: 'Smart Financial Radar',
-                subtitle: 'Automated warnings & milestones across your portfolio',
+              SectionHeader(
+                title: context.tr('ov_smart_radar'),
+                subtitle: context.tr('ov_smart_radar_sub'),
               ),
               const SizedBox(height: 10),
               ...kpi.smartAlerts.map((alert) {
@@ -323,12 +324,13 @@ class OverviewTab extends StatelessWidget {
 
             // ── RECENT ACTIVITY FEED ────────────────────────────────
             SectionHeader(
-              title: 'Recent Activity Stream',
-              subtitle: 'Latest ledger operations, payments & recoveries',
+              title: context.tr('ov_recent_activity'),
+              subtitle: context.tr('ov_recent_sub'),
               trailing: TextButton.icon(
                 onPressed: () => onNavigateTab(4),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.accentGreen),
-                label: const Text('See All', style: TextStyle(color: AppColors.accentGreen, fontWeight: FontWeight.w700, fontSize: 12)),
+                label: Text(context.tr('ov_see_all'),
+                    style: const TextStyle(color: AppColors.accentGreen, fontWeight: FontWeight.w700, fontSize: 12)),
               ),
             ),
             const SizedBox(height: 8),
@@ -482,13 +484,17 @@ class _HeroRadarConsole extends StatelessWidget {
                       decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      isPositive ? 'NET POSITIVE WEALTH' : 'TRUE NET LIABILITY',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                        color: accent,
+                    Flexible(
+                      child: Text(
+                        isPositive ? context.tr('ov_positive') : context.tr('ov_liability'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: accent,
+                        ),
                       ),
                     ),
                   ],
@@ -509,7 +515,7 @@ class _HeroRadarConsole extends StatelessWidget {
           const SizedBox(height: 12),
 
           Text(
-            'True Net Position (After Bullion Cost Basis)',
+            context.tr('ov_true_net_pos'),
             style: TextStyle(fontSize: 12, color: context.textSecondary, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 4),
@@ -529,7 +535,7 @@ class _HeroRadarConsole extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Net before bullion: ${hidden ? '₹ ••••••' : kpi.asalNetDebtFormatted} · Pocket card debt: ${hidden ? '₹ ••••••' : kpi.pocketDebtFormatted}',
+            'Net before assets: ${hidden ? '₹ ••••••' : kpi.asalNetDebtFormatted} · Pocket card debt: ${hidden ? '₹ ••••••' : kpi.pocketDebtFormatted}',
             style: TextStyle(fontSize: 11, color: context.textTertiary),
           ),
           const SizedBox(height: 16),
@@ -542,7 +548,7 @@ class _HeroRadarConsole extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Asset Coverage Ratio',
+                    context.tr('ov_coverage'),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary),
                   ),
                   Text(
@@ -577,7 +583,7 @@ class _HeroRadarConsole extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Receivables & Bullion cover ${coveragePct.toStringAsFixed(1)}% of your gross liabilities.',
+                'Receivables & Assets cover ${coveragePct.toStringAsFixed(1)}% of your gross liabilities.',
                 style: TextStyle(fontSize: 10, color: context.textTertiary),
               ),
             ],
@@ -607,8 +613,8 @@ class _HeroRadarConsole extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _PillBox(
-                  label: 'Bullion Basis',
-                  value: hidden ? '₹ ••••' : (kpi.gullakAssetFormatted as String),
+                  label: 'My Assets',
+                  value: hidden ? '₹ ••••' : (kpi.totalAssetsFormatted as String),
                   color: AppColors.accentAmber,
                   onTap: () => onNavigateTab(3),
                 ),
@@ -803,7 +809,7 @@ class _HealthScoreCard extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'Financial Health Score',
+                          context.tr('ov_health_title'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -889,7 +895,7 @@ class _LiabilityChartCard extends StatelessWidget {
       ('Loans', kpi.totalLoanRemainingPaise as int, AppColors.accentBlue),
       ('Payables', kpi.totalPayablesPaise as int, AppColors.accentPurple),
       ('Receivable', kpi.kulLenaPaise as int, AppColors.accentGreen),
-      ('Bullion', kpi.gullakAssetPaise as int, AppColors.accentAmber),
+      ('Assets', kpi.gullakAssetPaise as int, AppColors.accentAmber),
     ];
 
     final maxY = items.map((e) => e.$2 / 100.0).fold<double>(1000, (a, b) => a > b ? a : b) * 1.18;
@@ -898,9 +904,9 @@ class _LiabilityChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(
-            title: 'Balance Sheet Snapshot',
-            subtitle: 'Liabilities vs Receivables & Bullion Assets (₹)',
+          SectionHeader(
+            title: context.tr('ov_snapshot_title'),
+            subtitle: context.tr('ov_snapshot_sub'),
           ),
           const SizedBox(height: 18),
           SizedBox(

@@ -313,6 +313,38 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
         successMsg: '$name added',
       );
 
+  void addAdvanceToRecovery({
+    required String recoveryId,
+    required int additionalAmountPaise,
+    String note = '',
+  }) =>
+      _apply(
+        (s) => repository.addAdvanceToRecovery(
+          s,
+          recoveryId: recoveryId,
+          additionalAmountPaise: additionalAmountPaise,
+          note: note,
+        ),
+        successMsg: 'Receivable amount added',
+      );
+
+  void updateBorrowerDetails({
+    required String recoveryId,
+    required String name,
+    required int newPendingPaise,
+    required String note,
+  }) =>
+      _apply(
+        (s) => repository.updateBorrowerDetails(
+          s,
+          recoveryId: recoveryId,
+          name: name,
+          newPendingPaise: newPendingPaise,
+          note: note,
+        ),
+        successMsg: 'Borrower updated',
+      );
+
   void removeRecovery(String id) => _apply(
         (s) => repository.removeRecovery(s, id),
         successMsg: 'Recovery entry removed',
@@ -431,6 +463,23 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
 
   void setThemeMode(String mode) {
     final next = repository.updateThemeMode(state.appState, mode);
+    emit(_buildViewState(
+      next,
+      repository.canUndo,
+      syncStatus: state.syncStatus,
+      lastSyncedAt: state.lastSyncedAt,
+      hideBalances: state.hideBalances,
+    ));
+    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+  }
+
+  void toggleLanguage() {
+    final current = state.appState.settings.languageCode;
+    setLanguageCode(current == 'hi' ? 'en' : 'hi');
+  }
+
+  void setLanguageCode(String code) {
+    final next = repository.updateLanguageCode(state.appState, code);
     emit(_buildViewState(
       next,
       repository.canUndo,

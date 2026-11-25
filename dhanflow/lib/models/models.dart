@@ -356,7 +356,10 @@ class RecoveryModel extends Equatable {
   String get originalFormatted => INRFormatter.formatPaise(totalOriginalPaise);
 
   RecoveryModel copyWith({
+    String? name,
+    int? totalOriginalPaise,
     int? totalPendingPaise,
+    String? note,
     bool? isSettled,
     List<RecoveryPaymentModel>? payments,
     DateTime? updatedAt,
@@ -364,10 +367,10 @@ class RecoveryModel extends Equatable {
       RecoveryModel(
         id: id,
         userId: userId,
-        name: name,
-        totalOriginalPaise: totalOriginalPaise,
+        name: name ?? this.name,
+        totalOriginalPaise: totalOriginalPaise ?? this.totalOriginalPaise,
         totalPendingPaise: totalPendingPaise ?? this.totalPendingPaise,
-        note: note,
+        note: note ?? this.note,
         isSettled: isSettled ?? this.isSettled,
         payments: payments ?? this.payments,
         createdAt: createdAt,
@@ -403,7 +406,7 @@ class RecoveryModel extends Equatable {
       };
 
   @override
-  List<Object?> get props => [id, name, totalOriginalPaise, totalPendingPaise, isSettled, payments];
+  List<Object?> get props => [id, name, note, totalOriginalPaise, totalPendingPaise, isSettled, payments];
 }
 
 class BullionTransactionModel extends Equatable {
@@ -543,6 +546,7 @@ class UserSettingsModel extends Equatable {
   final int monthlyPaymentCapacityPaise;
   final String apiBaseUrl;
   final String themeMode; // 'dark' | 'light' | 'system'
+  final String languageCode; // 'en' | 'hi'
 
   const UserSettingsModel({
     this.goldCurrentSellPaise,
@@ -551,6 +555,7 @@ class UserSettingsModel extends Equatable {
     this.monthlyPaymentCapacityPaise = 2500000, // ₹25,000 default
     this.apiBaseUrl = 'https://vellemanage.vercel.app',
     this.themeMode = 'dark',
+    this.languageCode = 'en',
   });
 
   UserSettingsModel copyWith({
@@ -560,6 +565,7 @@ class UserSettingsModel extends Equatable {
     int? monthlyPaymentCapacityPaise,
     String? apiBaseUrl,
     String? themeMode,
+    String? languageCode,
   }) =>
       UserSettingsModel(
         goldCurrentSellPaise:
@@ -571,6 +577,7 @@ class UserSettingsModel extends Equatable {
             monthlyPaymentCapacityPaise ?? this.monthlyPaymentCapacityPaise,
         apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
         themeMode: themeMode ?? this.themeMode,
+        languageCode: languageCode ?? this.languageCode,
       );
 
   factory UserSettingsModel.fromJson(Map<String, dynamic> json) => UserSettingsModel(
@@ -581,6 +588,7 @@ class UserSettingsModel extends Equatable {
             (json['monthly_payment_capacity'] as num? ?? 2500000).toInt(),
         apiBaseUrl: json['api_base_url'] as String? ?? ApiConstants.defaultBaseUrl,
         themeMode: json['theme_mode'] as String? ?? 'dark',
+        languageCode: json['language_code'] as String? ?? 'en',
       );
 
   Map<String, dynamic> toJson() => {
@@ -590,6 +598,7 @@ class UserSettingsModel extends Equatable {
         'monthly_payment_capacity': monthlyPaymentCapacityPaise,
         'api_base_url': apiBaseUrl,
         'theme_mode': themeMode,
+        'language_code': languageCode,
       };
 
   @override
@@ -600,6 +609,7 @@ class UserSettingsModel extends Equatable {
         monthlyPaymentCapacityPaise,
         apiBaseUrl,
         themeMode,
+        languageCode,
       ];
 }
 

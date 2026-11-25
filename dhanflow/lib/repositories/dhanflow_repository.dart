@@ -478,6 +478,86 @@ class DhanflowRepository {
     );
   }
 
+  DhanflowAppState addAdvanceToRecovery(
+    DhanflowAppState state, {
+    required String recoveryId,
+    required int additionalAmountPaise,
+    String note = '',
+  }) {
+    if (additionalAmountPaise <= 0) {
+      throw const ValidationFailure('Additional amount must be greater than ₹0');
+    }
+    final rec = state.recoveries.firstWhere((r) => r.id == recoveryId);
+    final newOriginal = rec.totalOriginalPaise + additionalAmountPaise;
+    final newPending = rec.totalPendingPaise + additionalAmountPaise;
+    final mergedNote = note.trim().isNotEmpty
+        ? (rec.note.isEmpty ? note.trim() : '${rec.note} · ${note.trim()}')
+        : rec.note;
+
+    final updated = state.recoveries
+        .map((r) => r.id == recoveryId
+            ? r.copyWith(
+                totalOriginalPaise: newOriginal,
+                totalPendingPaise: newPending,
+                isSettled: false,
+                note: mergedNote,
+              )
+            : r)
+        .toList();
+
+    return _commit(
+      state,
+      state.copyWith(recoveries: updated),
+      eventType: 'RECOVERY_ADVANCE',
+      description:
+          '${rec.name}: Added advance +${INRFormatter.formatPaise(additionalAmountPaise)}${note.trim().isNotEmpty ? ' — ${note.trim()}' : ''} (pending: ${INRFormatter.formatPaise(newPending)})',
+      deltaPaise: additionalAmountPaise,
+      entityId: rec.id,
+      entityName: rec.name,
+    );
+  }
+
+  DhanflowAppState updateBorrowerDetails(
+    DhanflowAppState state, {
+    required String recoveryId,
+    required String name,
+    required int newPendingPaise,
+    required String note,
+  }) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty || newPendingPaise < 0) {
+      throw const ValidationFailure('Enter valid borrower name and amount');
+    }
+    final rec = state.recoveries.firstWhere((r) => r.id == recoveryId);
+    final diff = newPendingPaise - rec.totalPendingPaise;
+    final newOrig = newPendingPaise > rec.totalOriginalPaise
+        ? newPendingPaise
+        : rec.totalOriginalPaise;
+
+    final updated = state.recoveries
+        .map((r) => r.id == recoveryId
+            ? r.copyWith(
+                name: trimmed,
+                totalOriginalPaise: newOrig,
+                totalPendingPaise: newPendingPaise,
+                isSettled: newPendingPaise == 0,
+                note: note.trim(),
+              )
+            : r)
+        .toList();
+
+    return _commit(
+      state,
+      state.copyWith(recoveries: updated),
+      eventType: 'RECOVERY_UPDATE',
+      description:
+          'Updated $trimmed: pending ${rec.pendingFormatted} → ${INRFormatter.formatPaise(newPendingPaise)}',
+      deltaPaise: diff,
+      entityId: rec.id,
+      entityName: trimmed,
+    );
+  }
+
   DhanflowAppState removeRecovery(DhanflowAppState state, String id) {
     final rec = state.recoveries.firstWhere((r) => r.id == id);
     return _commit(
@@ -676,6 +756,15 @@ class DhanflowRepository {
   DhanflowAppState updateThemeMode(DhanflowAppState state, String mode) {
     final updated = state.copyWith(
       settings: state.settings.copyWith(themeMode: mode),
+    );
+    LocalStorageService.saveState(updated);
+    return updated;
+  }
+
+  DhanflowAppState updateLanguageCode(DhanflowAppState state, String code) {
+    final normalized = code == 'hi' ? 'hi' : 'en';
+    final updated = state.copyWith(
+      settings: state.settings.copyWith(languageCode: normalized),
     );
     LocalStorageService.saveState(updated);
     return updated;

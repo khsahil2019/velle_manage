@@ -29,9 +29,9 @@ class _DebtTabState extends State<DebtTab> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: context.bgCard,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.border),
                 ),
                 child: Row(
                   children: [
@@ -101,7 +101,7 @@ class _SegmentButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: selected ? Colors.black : AppColors.textSecondary,
+                  color: selected ? Colors.black : context.textSecondary,
                 ),
               ),
             ),
@@ -138,16 +138,18 @@ class _CreditCardsView extends StatelessWidget {
     final isWide = MediaQuery.of(context).size.width >= 760;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         // CRED-style Credit Cards Portfolio Command Strip
         DhanCard(
           padding: const EdgeInsets.all(16),
-          borderColor: AppColors.borderLight,
-          gradient: const LinearGradient(
+          borderColor: context.borderLight,
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF141A28), Color(0xFF0D111A)],
+            colors: context.isDark
+                ? const [Color(0xFF141A28), Color(0xFF0D111A)]
+                : [Colors.white, const Color(0xFFF1F5F9)],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -212,7 +214,7 @@ class _CreditCardsView extends StatelessWidget {
               labelStyle: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: filter == 0 ? Colors.black : AppColors.textSecondary,
+                color: filter == 0 ? Colors.black : context.textSecondary,
               ),
               onSelected: (_) => onFilterChanged(0),
             ),
@@ -223,7 +225,7 @@ class _CreditCardsView extends StatelessWidget {
               labelStyle: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: filter == 1 ? Colors.black : AppColors.textSecondary,
+                color: filter == 1 ? Colors.black : context.textSecondary,
               ),
               onSelected: (_) => onFilterChanged(1),
             ),
@@ -234,7 +236,7 @@ class _CreditCardsView extends StatelessWidget {
               labelStyle: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: filter == 2 ? Colors.black : AppColors.textSecondary,
+                color: filter == 2 ? Colors.black : context.textSecondary,
               ),
               onSelected: (_) => onFilterChanged(2),
             ),
@@ -242,11 +244,12 @@ class _CreditCardsView extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         if (cards.isEmpty)
-          const DhanCard(
+          DhanCard(
             child: Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('No cards match this filter', style: AppTextStyles.body),
+                padding: const EdgeInsets.all(20),
+                child: Text('No cards match this filter',
+                    style: TextStyle(fontSize: 13, color: context.textSecondary)),
               ),
             ),
           )
@@ -374,12 +377,13 @@ void _showCardCommandSheet(
                     Text(card.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.sectionTitle),
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700, color: ctx.textPrimary)),
                     Text(
                       'Due ${card.outstandingFormatted} · Avl ${card.availableFormatted}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.caption,
+                      style: TextStyle(fontSize: 11, color: ctx.textSecondary),
                     ),
                   ],
                 ),
@@ -392,9 +396,9 @@ void _showCardCommandSheet(
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: AppColors.bgPrimary,
+              color: ctx.isDark ? AppColors.bgPrimary : AppColors.lightBgCard2,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: ctx.border),
             ),
             child: Row(
               children: [
@@ -440,12 +444,13 @@ void _showCardCommandSheet(
             if (previewOut != null) ...[
               const SizedBox(height: 10),
               DhanCard(
-                backgroundColor: AppColors.bgHover,
+                backgroundColor: ctx.isDark ? AppColors.bgHover : AppColors.lightBgCard2,
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Updated Card Due', style: TextStyle(fontSize: 12)),
+                    Text('Updated Card Due',
+                        style: TextStyle(fontSize: 12, color: ctx.textPrimary)),
                     Text(
                       INRFormatter.formatPaise(previewOut),
                       style: TextStyle(
@@ -482,7 +487,7 @@ void _showCardCommandSheet(
                     selected: isPayment,
                     selectedColor: AppColors.accentGreen,
                     labelStyle: TextStyle(
-                      color: isPayment ? Colors.black : AppColors.textSecondary,
+                      color: isPayment ? Colors.black : ctx.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                     onSelected: (_) => setSheetState(() => isPayment = true),
@@ -501,7 +506,7 @@ void _showCardCommandSheet(
                     selected: !isPayment,
                     selectedColor: AppColors.accentRose,
                     labelStyle: TextStyle(
-                      color: !isPayment ? Colors.white : AppColors.textSecondary,
+                      color: !isPayment ? Colors.white : ctx.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                     onSelected: (_) => setSheetState(() => isPayment = false),
@@ -582,7 +587,7 @@ void _showCardCommandSheet(
                           fontWeight: FontWeight.w700,
                           color: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase()
                               ? Colors.black
-                              : AppColors.textSecondary,
+                              : ctx.textSecondary,
                         ),
                         onSelected: (_) => setSheetState(() => tagCtrl.text = tag),
                       ))
@@ -668,10 +673,11 @@ void _showAddCardSheet(BuildContext context) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Add Credit Card', style: AppTextStyles.sectionTitle),
+          Text('Add Credit Card',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: ctx.textPrimary)),
           const SizedBox(height: 4),
-          const Text('Pick a bank and fill limits — live card updates below',
-              style: AppTextStyles.caption),
+          Text('Pick a bank and fill limits — live card updates below',
+              style: TextStyle(fontSize: 11, color: ctx.textSecondary)),
           const SizedBox(height: 12),
 
           // Live CRED Card Preview
@@ -679,7 +685,12 @@ void _showAddCardSheet(BuildContext context) {
           const SizedBox(height: 14),
 
           // 1-Tap Bank Selector Row with Authentic Bank Icons
-          const Text('SELECT BANK', style: AppTextStyles.label),
+          Text('SELECT BANK',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: ctx.textTertiary,
+                  letterSpacing: 0.5)),
           const SizedBox(height: 6),
           SizedBox(
             height: 70,
@@ -706,10 +717,12 @@ void _showAddCardSheet(BuildContext context) {
                     width: 66,
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.greenDim.withValues(alpha: 0.45) : AppColors.bgHover,
+                      color: isSelected
+                          ? ctx.greenDim.withValues(alpha: 0.55)
+                          : (ctx.isDark ? AppColors.bgHover : AppColors.lightBgCard2),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isSelected ? AppColors.accentGreen : AppColors.borderLight,
+                        color: isSelected ? AppColors.accentGreen : ctx.borderLight,
                         width: isSelected ? 1.4 : 1.0,
                       ),
                     ),
@@ -729,7 +742,7 @@ void _showAddCardSheet(BuildContext context) {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? AppColors.accentGreen : AppColors.textSecondary,
+                            color: isSelected ? AppColors.accentGreen : ctx.textSecondary,
                           ),
                         ),
                       ],
@@ -771,7 +784,7 @@ void _showAddCardSheet(BuildContext context) {
                   labelStyle: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: enterAvailableMode ? Colors.black : AppColors.textSecondary,
+                    color: enterAvailableMode ? Colors.black : ctx.textSecondary,
                   ),
                   onSelected: (_) => setSheetState(() => enterAvailableMode = true),
                 ),
@@ -788,7 +801,7 @@ void _showAddCardSheet(BuildContext context) {
                   labelStyle: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: !enterAvailableMode ? Colors.black : AppColors.textSecondary,
+                    color: !enterAvailableMode ? Colors.black : ctx.textSecondary,
                   ),
                   onSelected: (_) => setSheetState(() => enterAvailableMode = false),
                 ),
@@ -825,7 +838,7 @@ void _showAddCardSheet(BuildContext context) {
                         fontWeight: FontWeight.w700,
                         color: tagCtrl.text.trim().toLowerCase() == tag.toLowerCase()
                             ? Colors.black
-                            : AppColors.textSecondary,
+                            : ctx.textSecondary,
                       ),
                       onSelected: (_) => setSheetState(() => tagCtrl.text = tag),
                     ))
@@ -875,7 +888,7 @@ class _LoansPayablesView extends StatelessWidget {
     final hidden = state.hideBalances;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         SectionHeader(
           title: 'EMI Loans',
@@ -896,11 +909,20 @@ class _LoansPayablesView extends StatelessWidget {
                       children: [
                         BankAvatarBadge(name: loan.name, overrideColor: AppColors.accentBlue),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(loan.name, style: AppTextStyles.cardTitle)),
+                        Expanded(
+                          child: Text(
+                            loan.name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ),
                         StatusChip(
                           text: loan.isCleared ? 'CLEARED' : '${loan.remainingEmis} EMIs left',
                           color: loan.isCleared ? AppColors.accentGreen : AppColors.accentBlue,
-                          bgColor: loan.isCleared ? AppColors.greenDim : AppColors.blueDim,
+                          bgColor: loan.isCleared ? context.greenDim : context.blueDim,
                         ),
                       ],
                     ),
@@ -963,11 +985,11 @@ class _LoansPayablesView extends StatelessWidget {
                           ),
                         PopupMenuButton<String>(
                           tooltip: 'More options',
-                          color: AppColors.bgCard2,
-                          icon: const Icon(
+                          color: context.bgCard2,
+                          icon: Icon(
                             Icons.more_horiz_rounded,
                             size: 19,
-                            color: AppColors.textTertiary,
+                            color: context.textTertiary,
                           ),
                           onSelected: (val) {
                             if (val == 'delete') {
@@ -1024,11 +1046,19 @@ class _LoansPayablesView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(p.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.cardTitle),
-                              if (p.note.isNotEmpty) Text(p.note, style: AppTextStyles.caption),
+                              Text(
+                                p.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                              if (p.note.isNotEmpty)
+                                Text(p.note,
+                                    style: TextStyle(fontSize: 11, color: context.textTertiary)),
                             ],
                           ),
                         ),
@@ -1057,11 +1087,11 @@ class _LoansPayablesView extends StatelessWidget {
                           ),
                         PopupMenuButton<String>(
                           tooltip: 'More options',
-                          color: AppColors.bgCard2,
-                          icon: const Icon(
+                          color: context.bgCard2,
+                          icon: Icon(
                             Icons.more_horiz_rounded,
                             size: 19,
-                            color: AppColors.textTertiary,
+                            color: context.textTertiary,
                           ),
                           onSelected: (val) {
                             if (val == 'delete') {
@@ -1106,7 +1136,8 @@ class _LoansPayablesView extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Add EMI Loan', style: AppTextStyles.sectionTitle),
+          Text('Add EMI Loan',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ctx.textPrimary)),
           const SizedBox(height: 12),
           TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Loan Name')),
           const SizedBox(height: 10),
@@ -1149,7 +1180,8 @@ class _LoansPayablesView extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Add Personal Payable', style: AppTextStyles.sectionTitle),
+          Text('Add Personal Payable',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ctx.textPrimary)),
           const SizedBox(height: 12),
           TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
           const SizedBox(height: 10),
@@ -1185,9 +1217,11 @@ class _LoansPayablesView extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Pay ${p.name}', style: AppTextStyles.sectionTitle),
+          Text('Pay ${p.name}',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ctx.textPrimary)),
           const SizedBox(height: 4),
-          Text('Pending: ${p.amountFormatted}', style: AppTextStyles.caption),
+          Text('Pending: ${p.amountFormatted}',
+              style: TextStyle(fontSize: 11, color: ctx.textSecondary)),
           const SizedBox(height: 12),
           TextField(
             controller: amtCtrl,
@@ -1225,14 +1259,16 @@ class _DebtFreedomEngineView extends StatelessWidget {
         (state.appState.settings.monthlyPaymentCapacityPaise / 100.0).clamp(5000.0, 150000.0);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         DhanCard(
           borderColor: AppColors.accentGreen.withValues(alpha: 0.35),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Strategy Selection', style: AppTextStyles.sectionTitle),
+              Text('Strategy Selection',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary)),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -1250,7 +1286,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
                       labelStyle: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: plan.strategy == s.$1 ? Colors.black : AppColors.textSecondary,
+                        color: plan.strategy == s.$1 ? Colors.black : context.textSecondary,
                       ),
                       onSelected: (_) => cubit.updateDebtEngine(strategy: s.$1),
                     ),
@@ -1260,9 +1296,9 @@ class _DebtFreedomEngineView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text('Monthly Repayment Budget',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        style: TextStyle(fontSize: 12, color: context.textSecondary)),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -1292,7 +1328,9 @@ class _DebtFreedomEngineView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Payoff Projection', style: AppTextStyles.sectionTitle),
+              Text('Payoff Projection',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700, color: context.textPrimary)),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -1321,7 +1359,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.greenDim,
+                    color: context.greenDim,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -1357,7 +1395,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 14,
-                    backgroundColor: AppColors.bgHover,
+                    backgroundColor: context.isDark ? AppColors.bgHover : AppColors.lightBgCard2,
                     child: Text('$idx',
                         style: const TextStyle(
                             fontSize: 12,
@@ -1372,10 +1410,13 @@ class _DebtFreedomEngineView extends StatelessWidget {
                         Text(step.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.cardTitle),
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: context.textPrimary)),
                         Text(
                           'Balance: ${hidden ? '₹ •••••' : INRFormatter.formatPaise(step.startingBalancePaise)} · APR ${(step.aprBps / 100).toStringAsFixed(1)}%',
-                          style: AppTextStyles.caption,
+                          style: TextStyle(fontSize: 11, color: context.textTertiary),
                         ),
                       ],
                     ),
@@ -1384,7 +1425,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
                   StatusChip(
                     text: 'Month ${step.clearedInMonth}',
                     color: AppColors.accentBlue,
-                    bgColor: AppColors.blueDim,
+                    bgColor: context.blueDim,
                   ),
                 ],
               ),
@@ -1408,7 +1449,17 @@ class _StatCol extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.label),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: context.textTertiary,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -1436,9 +1487,10 @@ Future<void> _confirmEmiAction(
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.bgCard2,
-      title: Text(title, style: AppTextStyles.sectionTitle),
-      content: Text(message, style: AppTextStyles.body),
+      backgroundColor: ctx.bgCard2,
+      title: Text(title,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: ctx.textPrimary)),
+      content: Text(message, style: TextStyle(fontSize: 13, color: ctx.textSecondary)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
         ElevatedButton(

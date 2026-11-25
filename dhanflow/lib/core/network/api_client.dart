@@ -67,8 +67,15 @@ class ApiClient {
         );
         return true;
       }
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      // Only clear saved session if server explicitly rejects refresh token (401/403),
+      // keeping permanent offline-capable login across temporary network glitches.
+      if (status == 401 || status == 403) {
+        await LocalStorageService.clearAuthSession();
+      }
     } catch (_) {
-      await LocalStorageService.clearAuthSession();
+      // Preserve local session on transient errors
     }
     return false;
   }

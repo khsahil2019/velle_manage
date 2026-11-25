@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../widgets/common/dhan_ui.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../auth/auth_screen.dart';
 
 /// Animated dark-fintech splash screen for Trustvly.
 class SplashScreen extends StatefulWidget {
@@ -56,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         transitionDuration: const Duration(milliseconds: 380),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: const DashboardScreen(),
+          child: const AuthGateScreen(),
         ),
       ),
     );
@@ -219,8 +219,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                           color: AppColors.accentGreen,
                                         ),
                                         _SplashFeatureChip(
-                                          icon: Icons.workspace_premium_rounded,
-                                          label: '24K Bullion',
+                                          icon: Icons.diamond_outlined,
+                                          label: 'Assets & Vault',
                                           color: AppColors.accentAmber,
                                         ),
                                         _SplashFeatureChip(
