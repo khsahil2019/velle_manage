@@ -829,7 +829,7 @@ class DhanflowRepository {
 
   bool get isAuthenticated => LocalStorageService.getTokens() != null;
 
-  Future<void> pushLocalSnapshotToCloud(
+  Future<String?> pushLocalSnapshotToCloud(
     DhanflowAppState state, {
     bool silent = true,
   }) async {
@@ -840,26 +840,56 @@ class DhanflowRepository {
     if (res.data['success'] != true) {
       throw Failure(res.data['message'] as String? ?? 'Cloud sync failed');
     }
+    final data = res.data['data'];
+    if (data is Map<String, dynamic>) {
+      return data['sync_hash'] as String?;
+    }
+    return null;
   }
 
-  Future<DhanflowAppState> pullCloudSnapshot(DhanflowAppState current) async {
+  Future<({DhanflowAppState? state, String? syncHash, bool unchanged})> pullCloudSnapshotIfChanged(
+    DhanflowAppState current, {
+    String? knownHash,
+    bool recordUndo = false,
+  }) async {
     apiClient.updateBaseUrl(current.settings.apiBaseUrl);
-    final res = await apiClient.get(ApiConstants.backupExport);
+    final query = <String, dynamic>{
+      '_ts': DateTime.now().millisecondsSinceEpoch.toString(),
+    };
+    if (knownHash != null && knownHash.isNotEmpty) {
+      query['hash'] = knownHash;
+    }
+
+    final res = await apiClient.get(ApiConstants.backupExport, query: query);
     if (res.data['success'] != true) {
       throw Failure(res.data['message'] as String? ?? 'Cloud restore failed');
     }
     final data = res.data['data'] as Map<String, dynamic>;
+    final syncHash = data['sync_hash'] as String?;
+    if (data['unchanged'] == true) {
+      return (state: null, syncHash: syncHash, unchanged: true);
+    }
+
     final rawSettings = data['user_settings'] as Map<String, dynamic>?;
     final mergedSettings = {
       ...?rawSettings,
       'api_base_url': current.settings.apiBaseUrl,
+      'theme_mode': current.settings.themeMode,
+      'language_code': current.settings.languageCode,
     };
     final cloudState = DhanflowAppState.fromJson({
       ...data,
       'user_settings': mergedSettings,
     });
-    LocalStorageService.pushUndoSnapshot(current);
+    if (recordUndo) {
+      LocalStorageService.pushUndoSnapshot(current);
+    }
     LocalStorageService.saveState(cloudState);
-    return cloudState;
+    return (state: cloudState, syncHash: syncHash, unchanged: false);
+  }
+
+  Future<DhanflowAppState> pullCloudSnapshot(DhanflowAppState current) async {
+    final result = await pullCloudSnapshotIfChanged(current, recordUndo: true);
+    return result.state ?? current;
   }
 }

@@ -76,7 +76,13 @@ class DhanflowViewState extends Equatable {
 
 class DhanflowCubit extends Cubit<DhanflowViewState> {
   final DhanflowRepository repository;
-  Timer? _syncDebounce;
+  Timer? _liveSyncTimer;
+  bool _isPushing = false;
+  bool _pendingPush = false;
+  bool _isPulling = false;
+  bool _isForeground = true;
+  int _localEpoch = 0;
+  String? _lastSyncedHash;
 
   DhanflowCubit({required this.repository}) : super(_initialState(repository));
 
@@ -135,32 +141,43 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
         lastSyncedAt: state.lastSyncedAt,
         hideBalances: state.hideBalances,
       ));
-      if (authed) {
-        _scheduleAutoCloudSync();
-      }
+      _notifyLocalMutation();
     } catch (e) {
       emit(state.copyWith(errorMessage: () => e.toString()));
     }
   }
 
-  void _scheduleAutoCloudSync() {
-    _syncDebounce?.cancel();
-    _syncDebounce = Timer(const Duration(milliseconds: 650), () async {
-      await _syncSilently();
-    });
+  void _notifyLocalMutation() {
+    _localEpoch++;
+    if (repository.isAuthenticated) {
+      unawaited(_triggerImmediatePush());
+    }
   }
 
-  Future<void> _syncSilently() async {
-    if (!repository.isAuthenticated) return;
+  Future<void> _triggerImmediatePush() async {
+    if (!repository.isAuthenticated || isClosed) return;
+    if (_isPushing) {
+      _pendingPush = true;
+      return;
+    }
+    _isPushing = true;
     try {
-      await repository.pushLocalSnapshotToCloud(state.appState, silent: true);
-      if (!isClosed) {
-        emit(state.copyWith(
-          isSyncing: false,
-          syncStatus: CloudSyncStatus.synced,
-          lastSyncedAt: DateTime.now(),
-        ));
-      }
+      do {
+        _pendingPush = false;
+        final epochAtStart = _localEpoch;
+        final snapshotToPush = state.appState;
+        final newHash = await repository.pushLocalSnapshotToCloud(snapshotToPush, silent: true);
+        if (newHash != null && newHash.isNotEmpty) {
+          _lastSyncedHash = newHash;
+        }
+        if (!isClosed && _localEpoch == epochAtStart && !_pendingPush) {
+          emit(state.copyWith(
+            isSyncing: false,
+            syncStatus: CloudSyncStatus.synced,
+            lastSyncedAt: DateTime.now(),
+          ));
+        }
+      } while (_pendingPush && repository.isAuthenticated && !isClosed);
     } catch (_) {
       if (!isClosed) {
         emit(state.copyWith(
@@ -168,6 +185,82 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
           syncStatus: CloudSyncStatus.error,
         ));
       }
+    } finally {
+      _isPushing = false;
+    }
+  }
+
+  /// Starts zero-delay initial DB pull + real-time 2s live database polling while active.
+  void startRealtimeSync() {
+    if (!repository.isAuthenticated || isClosed) return;
+    _isForeground = true;
+    _liveSyncTimer?.cancel();
+    _liveSyncTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => unawaited(syncFromCloudNow()),
+    );
+    unawaited(syncFromCloudNow());
+  }
+
+  void setForegroundActive(bool active) {
+    _isForeground = active;
+    if (active) {
+      startRealtimeSync();
+    } else {
+      _liveSyncTimer?.cancel();
+      _liveSyncTimer = null;
+    }
+  }
+
+  /// Checks database hash immediately and applies any remote changes with zero UI lag.
+  Future<void> syncFromCloudNow({bool forceFullPull = false}) async {
+    if (isClosed ||
+        !repository.isAuthenticated ||
+        !_isForeground ||
+        _isPushing ||
+        _pendingPush ||
+        _isPulling) {
+      return;
+    }
+    _isPulling = true;
+    final epochBeforePull = _localEpoch;
+    try {
+      final result = await repository.pullCloudSnapshotIfChanged(
+        state.appState,
+        knownHash: forceFullPull ? null : _lastSyncedHash,
+      );
+      if (isClosed || _localEpoch != epochBeforePull || _isPushing || _pendingPush) {
+        return;
+      }
+      if (result.syncHash != null && result.syncHash!.isNotEmpty) {
+        _lastSyncedHash = result.syncHash;
+      }
+      if (!result.unchanged && result.state != null) {
+        emit(_buildViewState(
+          result.state!,
+          repository.canUndo,
+          syncStatus: CloudSyncStatus.synced,
+          lastSyncedAt: DateTime.now(),
+          hideBalances: state.hideBalances,
+        ));
+      } else if (state.syncStatus != CloudSyncStatus.synced) {
+        emit(state.copyWith(
+          isSyncing: false,
+          syncStatus: CloudSyncStatus.synced,
+          lastSyncedAt: DateTime.now(),
+        ));
+      }
+    } catch (_) {
+      if (!isClosed &&
+          _localEpoch == epochBeforePull &&
+          state.syncStatus != CloudSyncStatus.error) {
+        emit(state.copyWith(
+          isSyncing: false,
+          syncStatus: CloudSyncStatus.error,
+        ));
+      }
+    } finally {
+      _isPulling = false;
     }
   }
 
@@ -176,15 +269,20 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
     required bool justSignedUp,
     required bool uploadLocalOnSignup,
   }) async {
+    _lastSyncedHash = null;
     if (justSignedUp && uploadLocalOnSignup) {
       await pushToCloud();
     } else {
       await pullFromCloud();
     }
+    startRealtimeSync();
   }
 
   void handleSignedOut() {
-    _syncDebounce?.cancel();
+    _liveSyncTimer?.cancel();
+    _liveSyncTimer = null;
+    _pendingPush = false;
+    _lastSyncedHash = null;
     emit(state.copyWith(
       isSyncing: false,
       syncStatus: CloudSyncStatus.offline,
@@ -439,7 +537,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       lastSyncedAt: state.lastSyncedAt,
       hideBalances: state.hideBalances,
     ));
-    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+    _notifyLocalMutation();
   }
 
   void updateDebtEngine({String? strategy, int? monthlyBudgetPaise}) {
@@ -452,7 +550,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       lastSyncedAt: state.lastSyncedAt,
       hideBalances: state.hideBalances,
     ));
-    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+    _notifyLocalMutation();
   }
 
   void toggleThemeMode() {
@@ -470,7 +568,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       lastSyncedAt: state.lastSyncedAt,
       hideBalances: state.hideBalances,
     ));
-    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+    _notifyLocalMutation();
   }
 
   void toggleLanguage() {
@@ -487,7 +585,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       lastSyncedAt: state.lastSyncedAt,
       hideBalances: state.hideBalances,
     ));
-    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+    _notifyLocalMutation();
   }
 
   void undoLastAction() {
@@ -502,7 +600,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
         lastSyncedAt: state.lastSyncedAt,
         hideBalances: state.hideBalances,
       ));
-      if (authed) _scheduleAutoCloudSync();
+      _notifyLocalMutation();
     }
   }
 
@@ -529,12 +627,16 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
   }
 
   Future<void> pushToCloud() async {
+    _localEpoch++;
     emit(state.copyWith(
       isSyncing: true,
       syncStatus: CloudSyncStatus.syncing,
     ));
     try {
-      await repository.pushLocalSnapshotToCloud(state.appState, silent: false);
+      final newHash = await repository.pushLocalSnapshotToCloud(state.appState, silent: false);
+      if (newHash != null && newHash.isNotEmpty) {
+        _lastSyncedHash = newHash;
+      }
       emit(_buildViewState(
         state.appState,
         repository.canUndo,
@@ -561,9 +663,18 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       syncStatus: CloudSyncStatus.syncing,
     ));
     try {
-      final restored = await repository.pullCloudSnapshot(state.appState);
+      final epochAtStart = _localEpoch;
+      final result = await repository.pullCloudSnapshotIfChanged(
+        state.appState,
+        knownHash: null,
+        recordUndo: true,
+      );
+      if (isClosed || _localEpoch != epochAtStart) return;
+      if (result.syncHash != null && result.syncHash!.isNotEmpty) {
+        _lastSyncedHash = result.syncHash;
+      }
       emit(_buildViewState(
-        restored,
+        result.state ?? state.appState,
         repository.canUndo,
         flash: 'Loaded financial data from Cloud Backend',
         syncStatus: CloudSyncStatus.synced,
@@ -584,7 +695,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
 
   @override
   Future<void> close() {
-    _syncDebounce?.cancel();
+    _liveSyncTimer?.cancel();
     return super.close();
   }
 }

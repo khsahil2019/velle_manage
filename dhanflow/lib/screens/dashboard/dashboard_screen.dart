@@ -18,12 +18,35 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   int _tabIndex = 0;
   final ValueNotifier<int> _profileSubTab = ValueNotifier<int>(0);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<DhanflowCubit>().startRealtimeSync();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    final cubit = context.read<DhanflowCubit>();
+    if (state == AppLifecycleState.resumed) {
+      cubit.setForegroundActive(true);
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      cubit.setForegroundActive(false);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _profileSubTab.dispose();
     super.dispose();
   }
@@ -33,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _profileSubTab.value = profileSubTab;
     }
     setState(() => _tabIndex = index);
+    context.read<DhanflowCubit>().syncFromCloudNow();
   }
 
   String _activeTitle(BuildContext context) {
@@ -137,9 +161,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 1),
                     BlocBuilder<DhanflowCubit, DhanflowViewState>(
                       buildWhen: (prev, curr) => prev.syncStatus != curr.syncStatus,
-                      builder: (context, state) => _SyncInlineDot(
-                        status: state.syncStatus,
-                        showBrandPrefix: _tabIndex != 0,
+                      builder: (context, state) => InkWell(
+                        onTap: () => context.read<DhanflowCubit>().syncFromCloudNow(forceFullPull: true),
+                        borderRadius: BorderRadius.circular(8),
+                        child: _SyncInlineDot(
+                          status: state.syncStatus,
+                          showBrandPrefix: _tabIndex != 0,
+                        ),
                       ),
                     ),
                   ],
