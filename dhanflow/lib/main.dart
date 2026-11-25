@@ -23,8 +23,9 @@ Future<void> main() async {
 
   await Hive.initFlutter();
   await LocalStorageService.init();
+  final initialAppState = LocalStorageService.loadState();
 
-  final apiClient = ApiClient();
+  final apiClient = ApiClient(baseUrl: initialAppState.settings.apiBaseUrl);
   final repository = DhanflowRepository(apiClient: apiClient);
 
   runApp(DhanflowApp(apiClient: apiClient, repository: repository));

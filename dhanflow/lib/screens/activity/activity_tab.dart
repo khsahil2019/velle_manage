@@ -85,6 +85,8 @@ class ActivityTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
+                  _ApiDiagnosticsStrip(apiUrl: state.appState.settings.apiBaseUrl),
+                  const SizedBox(height: 12),
                   if (authState is AuthAuthenticated)
                     Wrap(
                       spacing: 8,
@@ -327,6 +329,84 @@ class ActivityTab extends StatelessWidget {
             },
             child: const Text('Reset Everything'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApiDiagnosticsStrip extends StatefulWidget {
+  final String apiUrl;
+  const _ApiDiagnosticsStrip({required this.apiUrl});
+
+  @override
+  State<_ApiDiagnosticsStrip> createState() => _ApiDiagnosticsStripState();
+}
+
+class _ApiDiagnosticsStripState extends State<_ApiDiagnosticsStrip> {
+  bool _loading = false;
+  ApiHealthStatus? _status;
+
+  Future<void> _testApi() async {
+    setState(() => _loading = true);
+    final result = await context.read<AuthCubit>().checkBackendHealth();
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _status = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.bgHover,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.dns_outlined, size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  widget.apiUrl,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _loading ? null : _testApi,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: Icon(
+                  _loading ? Icons.sync_rounded : Icons.network_check_rounded,
+                  size: 13,
+                ),
+                label: Text(_loading ? 'Checking...' : 'Test API', style: const TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
+          if (_status != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _status!.message,
+              style: TextStyle(
+                fontSize: 10.5,
+                color: _status!.isFullyReady
+                    ? AppColors.accentGreen
+                    : (_status!.reachable ? AppColors.accentAmber : AppColors.accentRose),
+              ),
+            ),
+          ],
         ],
       ),
     );

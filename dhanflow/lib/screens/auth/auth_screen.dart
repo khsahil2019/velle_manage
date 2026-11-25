@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/dhanflow_cubit.dart';
@@ -20,6 +21,8 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _seedInitialData = true;
   bool _uploadCurrentLocalData = false;
   bool _showAdvancedUrl = false;
+  bool _checkingHealth = false;
+  ApiHealthStatus? _healthStatus;
 
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
@@ -33,6 +36,21 @@ class _AuthScreenState extends State<AuthScreen> {
     _urlCtrl = TextEditingController(
       text: context.read<DhanflowCubit>().state.appState.settings.apiBaseUrl,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkBackendHealth());
+  }
+
+  Future<void> _checkBackendHealth() async {
+    if (!mounted) return;
+    setState(() => _checkingHealth = true);
+    final normalized = ApiConstants.normalizeBaseUrl(_urlCtrl.text);
+    _urlCtrl.text = normalized;
+    context.read<DhanflowCubit>().updateApiBaseUrl(normalized);
+    final status = await context.read<AuthCubit>().checkBackendHealth();
+    if (!mounted) return;
+    setState(() {
+      _checkingHealth = false;
+      _healthStatus = status;
+    });
   }
 
   @override
@@ -343,6 +361,60 @@ class _AuthScreenState extends State<AuthScreen> {
                                   ),
 
                                   const SizedBox(height: 10),
+                                  if (_checkingHealth || _healthStatus != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: (_healthStatus?.isFullyReady == true
+                                                ? AppColors.greenDim
+                                                : (_healthStatus?.reachable == true
+                                                    ? AppColors.amberDim
+                                                    : AppColors.roseDim))
+                                            .withValues(alpha: 0.35),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: (_healthStatus?.isFullyReady == true
+                                                  ? AppColors.accentGreen
+                                                  : (_healthStatus?.reachable == true
+                                                      ? AppColors.accentAmber
+                                                      : AppColors.accentRose))
+                                              .withValues(alpha: 0.4),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _checkingHealth
+                                                ? Icons.sync_rounded
+                                                : (_healthStatus?.isFullyReady == true
+                                                    ? Icons.cloud_done_rounded
+                                                    : (_healthStatus?.reachable == true
+                                                        ? Icons.storage_rounded
+                                                        : Icons.cloud_off_rounded)),
+                                            size: 15,
+                                            color: _healthStatus?.isFullyReady == true
+                                                ? AppColors.accentGreen
+                                                : (_healthStatus?.reachable == true
+                                                    ? AppColors.accentAmber
+                                                    : AppColors.accentRose),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _checkingHealth
+                                                  ? 'Checking Vercel PHP API status...'
+                                                  : (_healthStatus?.message ?? ''),
+                                              style: const TextStyle(
+                                                fontSize: 10.5,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                  ],
                                   TextButton.icon(
                                     onPressed: () =>
                                         setState(() => _showAdvancedUrl = !_showAdvancedUrl),
@@ -354,7 +426,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       color: AppColors.textTertiary,
                                     ),
                                     label: const Text(
-                                      'Backend API Endpoint',
+                                      'Backend API Endpoint & Test',
                                       style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
                                     ),
                                   ),
@@ -366,6 +438,26 @@ class _AuthScreenState extends State<AuthScreen> {
                                         labelText: 'Vercel PHP Backend URL',
                                         hintText: 'https://vellemanage.vercel.app',
                                       ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: _checkingHealth ? null : _checkBackendHealth,
+                                            icon: const Icon(Icons.network_check_rounded, size: 15),
+                                            label: const Text('Test API', style: TextStyle(fontSize: 11)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        TextButton(
+                                          onPressed: () {
+                                            _urlCtrl.text = ApiConstants.defaultBaseUrl;
+                                            _checkBackendHealth();
+                                          },
+                                          child: const Text('Reset Default', style: TextStyle(fontSize: 11)),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ],

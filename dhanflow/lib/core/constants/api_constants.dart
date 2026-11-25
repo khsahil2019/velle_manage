@@ -12,10 +12,22 @@ class ApiConstants {
     return 'https://vellemanage.vercel.app';
   }
 
+  /// Normalizes user-entered or stored backend URLs cleanly.
+  static String normalizeBaseUrl(String? raw) {
+    final trimmed = (raw ?? '').trim().replaceAll(RegExp(r'/+$'), '');
+    if (trimmed.isEmpty || trimmed == 'https://dhanflow-api.vercel.app') {
+      return defaultBaseUrl;
+    }
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return 'https://$trimmed';
+    }
+    return trimmed;
+  }
+
   static const Duration connectTimeout = Duration(seconds: 12);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
-  static const String health = '/api/index.php';
+  static const String health = '/api';
   static const String register = '/api/auth/register';
   static const String login = '/api/auth/login';
   static const String refresh = '/api/auth/refresh';

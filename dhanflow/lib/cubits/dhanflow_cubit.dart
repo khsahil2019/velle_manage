@@ -386,10 +386,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       );
 
   void updateApiBaseUrl(String url) {
-    final next = state.appState.copyWith(
-      settings: state.appState.settings.copyWith(apiBaseUrl: url.trim()),
-    );
-    repository.apiClient.updateBaseUrl(url);
+    final next = repository.updateApiBaseUrl(state.appState, url);
     emit(_buildViewState(
       next,
       repository.canUndo,

@@ -618,6 +618,16 @@ class DhanflowRepository {
     return seed;
   }
 
+  DhanflowAppState updateApiBaseUrl(DhanflowAppState current, String url) {
+    final normalized = ApiConstants.normalizeBaseUrl(url);
+    final next = current.copyWith(
+      settings: current.settings.copyWith(apiBaseUrl: normalized),
+    );
+    LocalStorageService.saveState(next);
+    apiClient.updateBaseUrl(normalized);
+    return next;
+  }
+
   // ── CLOUD SYNC (VERCEL PHP API) ───────────────────────────────
 
   bool get isAuthenticated => LocalStorageService.getTokens() != null;

@@ -7,7 +7,7 @@ class ApiClient {
 
   ApiClient({String? baseUrl}) {
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl ?? ApiConstants.defaultBaseUrl,
+      baseUrl: ApiConstants.normalizeBaseUrl(baseUrl ?? ApiConstants.defaultBaseUrl),
       connectTimeout: ApiConstants.connectTimeout,
       receiveTimeout: ApiConstants.receiveTimeout,
       headers: {
@@ -42,7 +42,7 @@ class ApiClient {
   }
 
   void updateBaseUrl(String newUrl) {
-    _dio.options.baseUrl = newUrl.trim().replaceAll(RegExp(r'/$'), '');
+    _dio.options.baseUrl = ApiConstants.normalizeBaseUrl(newUrl);
   }
 
   String get baseUrl => _dio.options.baseUrl;

@@ -31,9 +31,10 @@ class LocalStorageService {
       try {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         final loaded = DhanflowAppState.fromJson(decoded);
-        if (loaded.settings.apiBaseUrl == 'https://dhanflow-api.vercel.app') {
+        final normalizedUrl = ApiConstants.normalizeBaseUrl(loaded.settings.apiBaseUrl);
+        if (normalizedUrl != loaded.settings.apiBaseUrl) {
           final migrated = loaded.copyWith(
-            settings: loaded.settings.copyWith(apiBaseUrl: ApiConstants.defaultBaseUrl),
+            settings: loaded.settings.copyWith(apiBaseUrl: normalizedUrl),
           );
           saveState(migrated);
           return migrated;

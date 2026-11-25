@@ -51,10 +51,92 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
+class ApiHealthStatus {
+  final bool reachable;
+  final bool databaseConfigured;
+  final String? databaseDriver;
+  final String? runtime;
+  final String endpoint;
+  final String message;
+
+  const ApiHealthStatus({
+    required this.reachable,
+    required this.databaseConfigured,
+    required this.endpoint,
+    required this.message,
+    this.databaseDriver,
+    this.runtime,
+  });
+
+  bool get isFullyReady => reachable && databaseConfigured;
+}
+
 class AuthCubit extends Cubit<AuthState> {
   final ApiClient apiClient;
 
   AuthCubit({required this.apiClient}) : super(const AuthOfflineGuest());
+
+  /// Verifies live API reachability and whether backend DB credentials are configured.
+  Future<ApiHealthStatus> checkBackendHealth() async {
+    final endpoint = '${apiClient.baseUrl}${ApiConstants.health}';
+    try {
+      final res = await apiClient.get(ApiConstants.health);
+      if (res.data is Map && res.data['success'] == true) {
+        final data = res.data['data'] as Map<String, dynamic>? ?? {};
+        final dbConfigured = data['database_configured'] as bool? ?? false;
+        final driver = data['database_driver'] as String?;
+        final runtime = data['runtime'] as String?;
+        final apiMsg = res.data['message'] as String? ?? 'OK';
+        return ApiHealthStatus(
+          reachable: true,
+          databaseConfigured: dbConfigured,
+          databaseDriver: driver,
+          runtime: runtime,
+          endpoint: endpoint,
+          message: dbConfigured
+              ? '$runtime Online · Database ready (${(driver ?? 'SQL').toUpperCase()})'
+              : '$runtime Online · $apiMsg',
+        );
+      }
+      return ApiHealthStatus(
+        reachable: false,
+        databaseConfigured: false,
+        endpoint: endpoint,
+        message: 'Unexpected response from $endpoint',
+      );
+    } on DioException catch (e) {
+      return ApiHealthStatus(
+        reachable: e.response != null,
+        databaseConfigured: false,
+        endpoint: endpoint,
+        message: _extractDioError(e, 'Unable to reach API at $endpoint'),
+      );
+    } catch (e) {
+      return ApiHealthStatus(
+        reachable: false,
+        databaseConfigured: false,
+        endpoint: endpoint,
+        message: e.toString(),
+      );
+    }
+  }
+
+  String _extractDioError(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is Map && data['message'] is String && (data['message'] as String).trim().isNotEmpty) {
+      return data['message'] as String;
+    }
+    final status = e.response?.statusCode;
+    if (status != null) {
+      return '$fallback (HTTP $status)';
+    }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return 'Network/CORS error connecting to ${apiClient.baseUrl}. Check internet and Backend API Endpoint URL.';
+    }
+    return fallback;
+  }
 
   void loadSession() {
     final user = LocalStorageService.getUser();
@@ -109,8 +191,7 @@ class AuthCubit extends Cubit<AuthState> {
       refreshProfile();
       return true;
     } on DioException catch (e) {
-      final msg = (e.response?.data is Map) ? (e.response?.data['message'] as String?) : null;
-      emit(AuthError(msg ?? 'Sign in failed: verify credentials and server connection'));
+      emit(AuthError(_extractDioError(e, 'Sign in failed: verify credentials and server connection')));
       return false;
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -148,8 +229,7 @@ class AuthCubit extends Cubit<AuthState> {
       ));
       return true;
     } on DioException catch (e) {
-      final msg = (e.response?.data is Map) ? (e.response?.data['message'] as String?) : null;
-      emit(AuthError(msg ?? 'Registration failed'));
+      emit(AuthError(_extractDioError(e, 'Registration failed')));
       return false;
     } catch (e) {
       emit(AuthError(e.toString()));
