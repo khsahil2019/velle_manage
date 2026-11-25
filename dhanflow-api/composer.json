@@ -1,0 +1,26 @@
+{
+  "require": {
+    "php": ">=8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Dhanflow\\": "src/"
+    },
+    "files": [
+      "src/Core/Database.php",
+      "src/Core/Response.php",
+      "src/Core/Auth.php",
+      "src/Core/Request.php",
+      "src/Services/KPIService.php",
+      "src/Services/RecoveryService.php"
+    ]
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  }
+}

@@ -1,0 +1,47 @@
+name: dhanflow
+description: "DHANFLOW — Debt Freedom. Wealth Clarity. India's personal debt & bullion tracker."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # Network
+  dio: ^5.7.0
+
+  # Local Storage (offline-first)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.2.2
+
+  # Charts & Formatting
+  fl_chart: ^0.69.0
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+
+  # File / Export / Import
+  share_plus: ^10.1.0
+  file_picker: ^8.1.2
+  path_provider: ^2.1.4
+
+  # Utils
+  uuid: ^4.4.2
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.4
+  bloc_test: ^9.1.7
+
+flutter:
+  uses-material-design: true
