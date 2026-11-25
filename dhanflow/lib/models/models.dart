@@ -4,6 +4,41 @@ import '../core/constants/api_constants.dart';
 import '../core/constants/app_colors.dart';
 import '../core/utils/inr_formatter.dart';
 
+int _parseInt(dynamic value, [int fallback = 0]) {
+  if (value == null) return fallback;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value.trim()) ?? double.tryParse(value.trim())?.toInt() ?? fallback;
+  return fallback;
+}
+
+int? _parseNullableInt(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toInt();
+  if (value is String && value.trim().isNotEmpty) {
+    return int.tryParse(value.trim()) ?? double.tryParse(value.trim())?.toInt();
+  }
+  return null;
+}
+
+bool _parseBool(dynamic value, [bool fallback = false]) {
+  if (value == null) return fallback;
+  if (value is bool) return value;
+  if (value is num) return value.toInt() != 0;
+  if (value is String) {
+    final lower = value.trim().toLowerCase();
+    if (lower == 'true' || lower == '1' || lower == 'yes') return true;
+    if (lower == 'false' || lower == '0' || lower == 'no') return false;
+  }
+  return fallback;
+}
+
+DateTime _parseDate(dynamic value) {
+  if (value is String && value.trim().isNotEmpty) {
+    return DateTime.tryParse(value.trim()) ?? DateTime.now();
+  }
+  return DateTime.now();
+}
+
 class CreditCardModel extends Equatable {
   final String id;
   final String userId;
@@ -56,14 +91,14 @@ class CreditCardModel extends Equatable {
         id: json['id'] as String,
         userId: json['user_id'] as String? ?? 'local',
         name: json['name'] as String,
-        totalLimitPaise: (json['total_limit'] as num).toInt(),
-        availableLimitPaise: (json['available_limit'] as num).toInt(),
+        totalLimitPaise: _parseInt(json['total_limit']),
+        availableLimitPaise: _parseInt(json['available_limit']),
         categoryTag: json['category_tag'] as String? ?? '',
-        displayOrder: (json['display_order'] as num? ?? 0).toInt(),
-        isActive: (json['is_active'] as num? ?? 1) == 1,
-        aprBps: (json['apr_bps'] as num? ?? 3600).toInt(),
-        createdAt: DateTime.parse(json['created_at'] as String),
-        updatedAt: DateTime.parse(json['updated_at'] as String),
+        displayOrder: _parseInt(json['display_order']),
+        isActive: _parseBool(json['is_active'], true),
+        aprBps: _parseInt(json['apr_bps'], 3600),
+        createdAt: _parseDate(json['created_at']),
+        updatedAt: _parseDate(json['updated_at']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -178,15 +213,15 @@ class LoanModel extends Equatable {
         id: json['id'] as String,
         userId: json['user_id'] as String? ?? 'local',
         name: json['name'] as String,
-        emiAmountPaise: (json['emi_amount'] as num).toInt(),
-        remainingEmis: (json['remaining_emis'] as num).toInt(),
-        originalEmis: (json['original_emis'] as num? ?? json['remaining_emis'] as num).toInt(),
-        totalRemainingPaise: (json['total_remaining'] as num).toInt(),
+        emiAmountPaise: _parseInt(json['emi_amount']),
+        remainingEmis: _parseInt(json['remaining_emis']),
+        originalEmis: _parseInt(json['original_emis'], _parseInt(json['remaining_emis'])),
+        totalRemainingPaise: _parseInt(json['total_remaining']),
         note: json['note'] as String? ?? '',
-        isActive: (json['is_active'] as num? ?? 1) == 1,
-        aprBps: (json['apr_bps'] as num? ?? 1600).toInt(),
-        createdAt: DateTime.parse(json['created_at'] as String),
-        updatedAt: DateTime.parse(json['updated_at'] as String),
+        isActive: _parseBool(json['is_active'], true),
+        aprBps: _parseInt(json['apr_bps'], 1600),
+        createdAt: _parseDate(json['created_at']),
+        updatedAt: _parseDate(json['updated_at']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -260,11 +295,11 @@ class PersonalPayableModel extends Equatable {
         id: json['id'] as String,
         userId: json['user_id'] as String? ?? 'local',
         name: json['name'] as String,
-        amountPaise: (json['amount'] as num).toInt(),
+        amountPaise: _parseInt(json['amount']),
         note: json['note'] as String? ?? '',
-        isSettled: (json['is_settled'] as num? ?? 0) == 1,
-        createdAt: DateTime.parse(json['created_at'] as String),
-        updatedAt: DateTime.parse(json['updated_at'] as String),
+        isSettled: _parseBool(json['is_settled'], false),
+        createdAt: _parseDate(json['created_at']),
+        updatedAt: _parseDate(json['updated_at']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -304,10 +339,10 @@ class RecoveryPaymentModel extends Equatable {
   factory RecoveryPaymentModel.fromJson(Map<String, dynamic> json) => RecoveryPaymentModel(
         id: json['id'] as String,
         recoveryId: json['recovery_id'] as String,
-        amountPaise: (json['amount'] as num).toInt(),
+        amountPaise: _parseInt(json['amount']),
         appliedToCardId: json['applied_to_card'] as String?,
         note: json['note'] as String? ?? '',
-        paymentDate: DateTime.parse(json['payment_date'] as String),
+        paymentDate: _parseDate(json['payment_date']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -381,15 +416,15 @@ class RecoveryModel extends Equatable {
         id: json['id'] as String,
         userId: json['user_id'] as String? ?? 'local',
         name: json['name'] as String,
-        totalOriginalPaise: (json['total_original'] as num).toInt(),
-        totalPendingPaise: (json['total_pending'] as num).toInt(),
+        totalOriginalPaise: _parseInt(json['total_original']),
+        totalPendingPaise: _parseInt(json['total_pending']),
         note: json['note'] as String? ?? '',
-        isSettled: (json['is_settled'] as num? ?? 0) == 1,
+        isSettled: _parseBool(json['is_settled'], false),
         payments: (json['payments'] as List<dynamic>? ?? [])
             .map((p) => RecoveryPaymentModel.fromJson(p as Map<String, dynamic>))
             .toList(),
-        createdAt: DateTime.parse(json['created_at'] as String),
-        updatedAt: DateTime.parse(json['updated_at'] as String),
+        createdAt: _parseDate(json['created_at']),
+        updatedAt: _parseDate(json['updated_at']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -446,12 +481,12 @@ class BullionTransactionModel extends Equatable {
         id: json['id'] as String,
         userId: json['user_id'] as String? ?? 'local',
         metal: json['metal'] as String,
-        gramsX10000: (json['grams_x10000'] as num).toInt(),
-        buyRatePaise: (json['buy_rate_paise'] as num).toInt(),
-        preGstPaise: (json['pre_gst_paise'] as num).toInt(),
-        gstPaise: (json['gst_paise'] as num).toInt(),
-        totalPaidPaise: (json['total_paid_paise'] as num).toInt(),
-        purchaseDate: DateTime.parse(json['purchase_date'] as String),
+        gramsX10000: _parseInt(json['grams_x10000']),
+        buyRatePaise: _parseInt(json['buy_rate_paise']),
+        preGstPaise: _parseInt(json['pre_gst_paise']),
+        gstPaise: _parseInt(json['gst_paise']),
+        totalPaidPaise: _parseInt(json['total_paid_paise']),
+        purchaseDate: _parseDate(json['purchase_date']),
         platform: json['platform'] as String? ?? 'Vault',
       );
 
@@ -517,11 +552,11 @@ class ActivityLogModel extends Equatable {
         id: json['id'] as String,
         eventType: json['event_type'] as String? ?? 'SYSTEM',
         description: json['description'] as String,
-        deltaPaise: (json['delta_paise'] as num?)?.toInt(),
+        deltaPaise: _parseNullableInt(json['delta_paise']),
         relatedEntityId: json['related_entity_id'] as String?,
         relatedEntityName: json['related_entity_name'] as String?,
-        createdAt: DateTime.parse(json['created_at'] as String),
-        isReversed: (json['is_reversed'] as bool?) ?? false,
+        createdAt: _parseDate(json['created_at']),
+        isReversed: _parseBool(json['is_reversed'], false),
       );
 
   Map<String, dynamic> toJson() => {
@@ -581,11 +616,11 @@ class UserSettingsModel extends Equatable {
       );
 
   factory UserSettingsModel.fromJson(Map<String, dynamic> json) => UserSettingsModel(
-        goldCurrentSellPaise: (json['gold_current_sell_paise'] as num?)?.toInt(),
-        silverCurrentSellPaise: (json['silver_current_sell_paise'] as num?)?.toInt(),
+        goldCurrentSellPaise: _parseNullableInt(json['gold_current_sell_paise']),
+        silverCurrentSellPaise: _parseNullableInt(json['silver_current_sell_paise']),
         debtPayoffStrategy: json['debt_payoff_strategy'] as String? ?? 'snowball',
         monthlyPaymentCapacityPaise:
-            (json['monthly_payment_capacity'] as num? ?? 2500000).toInt(),
+            _parseInt(json['monthly_payment_capacity'], 2500000),
         apiBaseUrl: json['api_base_url'] as String? ?? ApiConstants.defaultBaseUrl,
         themeMode: json['theme_mode'] as String? ?? 'dark',
         languageCode: json['language_code'] as String? ?? 'en',
@@ -699,15 +734,11 @@ class PersonalAssetModel extends Equatable {
         title: json['title'] as String,
         category: (json['category'] as String? ?? 'other').toLowerCase(),
         quantityLabel: json['quantity_label'] as String? ?? '1 Unit',
-        purchaseValuePaise: (json['purchase_value_paise'] as num? ?? 0).toInt(),
-        currentValuePaise: (json['current_value_paise'] as num? ?? 0).toInt(),
+        purchaseValuePaise: _parseInt(json['purchase_value_paise']),
+        currentValuePaise: _parseInt(json['current_value_paise']),
         note: json['note'] as String? ?? '',
-        acquiredDate: json['acquired_date'] != null
-            ? DateTime.parse(json['acquired_date'] as String)
-            : DateTime.now(),
-        createdAt: json['created_at'] != null
-            ? DateTime.parse(json['created_at'] as String)
-            : DateTime.now(),
+        acquiredDate: _parseDate(json['acquired_date']),
+        createdAt: _parseDate(json['created_at']),
       );
 
   Map<String, dynamic> toJson() => {
