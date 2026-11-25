@@ -178,7 +178,11 @@ try {
         }
 
         $db->commit();
-        Response::success(['synced_at' => date('c')], 'Cloud storage synced');
+        $syncHash = SyncService::computeHash(SyncService::buildSnapshot($db, $userId));
+        Response::success([
+            'synced_at' => date('c'),
+            'sync_hash' => $syncHash,
+        ], 'Cloud storage synced');
     } catch (\Throwable $e) {
         $db->rollBack();
         throw $e;

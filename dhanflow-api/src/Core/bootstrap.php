@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../src/Services/KPIService.php';
 require_once __DIR__ . '/../../src/Services/RecoveryService.php';
 require_once __DIR__ . '/../../src/Services/DebtEngineService.php';
 require_once __DIR__ . '/../../src/Services/SeedService.php';
+require_once __DIR__ . '/../../src/Services/SyncService.php';
 
 // Universal CORS preflight handling
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
