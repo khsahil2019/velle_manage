@@ -1,0 +1,6 @@
+dhanflow/
+vellemanage.html
+*.log
+.DS_Store
+dhanflow-api/.env
+dhanflow-api/tests/

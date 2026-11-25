@@ -1,8 +1,17 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConstants {
   ApiConstants._();
 
-  // Default Vercel PHP API URL — user can override in Cloud Sync settings
-  static const String defaultBaseUrl = 'https://dhanflow-api.vercel.app';
+  /// Uses the current web origin automatically on Vercel (e.g. https://vellemanage.vercel.app),
+  /// and defaults to https://vellemanage.vercel.app on mobile/desktop.
+  static String get defaultBaseUrl {
+    if (kIsWeb && Uri.base.hasAuthority && Uri.base.scheme.startsWith('http')) {
+      return Uri.base.origin;
+    }
+    return 'https://vellemanage.vercel.app';
+  }
+
   static const Duration connectTimeout = Duration(seconds: 12);
   static const Duration receiveTimeout = Duration(seconds: 15);
 

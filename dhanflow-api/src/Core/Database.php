@@ -25,11 +25,18 @@ class Database {
             ]);
             $this->pdo->exec('PRAGMA foreign_keys = ON;');
         } else {
-            $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '127.0.0.1';
-            $name = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'dhanflow';
-            $user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
-            $pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '';
-            $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
+            $host = (string)($_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: '');
+            $name = (string)($_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: '');
+            $user = (string)($_ENV['DB_USER'] ?? getenv('DB_USER') ?: '');
+            $pass = (string)($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '');
+            $port = (string)($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306');
+
+            if ($host === '' || $name === '' || $user === '') {
+                throw new \RuntimeException(
+                    'Database not configured: set DB_HOST, DB_NAME, DB_USER, DB_PASS, JWT_SECRET environment variables in Vercel.',
+                    503
+                );
+            }
 
             $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
             $options = [

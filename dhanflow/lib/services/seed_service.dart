@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/constants/api_constants.dart';
 import '../models/models.dart';
 
 /// Generates the exact initial financial snapshot in paise & grams×10000.
@@ -6,7 +7,7 @@ class SeedService {
   SeedService._();
   static const _uuid = Uuid();
 
-  static DhanflowAppState createInitialState({String apiBaseUrl = 'https://dhanflow-api.vercel.app'}) {
+  static DhanflowAppState createInitialState({String? apiBaseUrl}) {
     final now = DateTime.now();
 
     final cards = [
@@ -264,7 +265,7 @@ class SeedService {
           createdAt: now,
         ),
       ],
-      settings: UserSettingsModel(apiBaseUrl: apiBaseUrl),
+      settings: UserSettingsModel(apiBaseUrl: apiBaseUrl ?? ApiConstants.defaultBaseUrl),
     );
   }
 }

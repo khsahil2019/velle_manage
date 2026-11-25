@@ -62,5 +62,6 @@ try {
     ], 'Account created', 201);
 } catch (\Throwable $e) {
     error_log('[DHANFLOW] Register error: ' . $e->getMessage());
+    if ($e->getCode() === 503) Response::error($e->getMessage(), 503);
     Response::serverError();
 }

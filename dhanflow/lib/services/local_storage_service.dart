@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../core/constants/api_constants.dart';
 import '../models/models.dart';
 import 'seed_service.dart';
 
@@ -29,7 +30,15 @@ class LocalStorageService {
     if (raw != null && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
-        return DhanflowAppState.fromJson(decoded);
+        final loaded = DhanflowAppState.fromJson(decoded);
+        if (loaded.settings.apiBaseUrl == 'https://dhanflow-api.vercel.app') {
+          final migrated = loaded.copyWith(
+            settings: loaded.settings.copyWith(apiBaseUrl: ApiConstants.defaultBaseUrl),
+          );
+          saveState(migrated);
+          return migrated;
+        }
+        return loaded;
       } catch (_) {
         // Fallback safely if corrupted, preserve raw backup key
         _requireBox.put('corrupted_backup_${DateTime.now().millisecondsSinceEpoch}', raw);

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import '../core/constants/api_constants.dart';
 import '../core/constants/app_colors.dart';
 import '../core/utils/inr_formatter.dart';
 
@@ -547,7 +548,7 @@ class UserSettingsModel extends Equatable {
     this.silverCurrentSellPaise,
     this.debtPayoffStrategy = 'snowball',
     this.monthlyPaymentCapacityPaise = 2500000, // ₹25,000 default
-    this.apiBaseUrl = 'https://dhanflow-api.vercel.app',
+    this.apiBaseUrl = 'https://vellemanage.vercel.app',
   });
 
   UserSettingsModel copyWith({
@@ -574,7 +575,7 @@ class UserSettingsModel extends Equatable {
         debtPayoffStrategy: json['debt_payoff_strategy'] as String? ?? 'snowball',
         monthlyPaymentCapacityPaise:
             (json['monthly_payment_capacity'] as num? ?? 2500000).toInt(),
-        apiBaseUrl: json['api_base_url'] as String? ?? 'https://dhanflow-api.vercel.app',
+        apiBaseUrl: json['api_base_url'] as String? ?? ApiConstants.defaultBaseUrl,
       );
 
   Map<String, dynamic> toJson() => {

@@ -1,56 +1,48 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.php",
-      "use": "vercel-php@0.7.1"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/**/*.php": {
+      "runtime": "vercel-php@0.9.0",
+      "includeFiles": "src/**",
+      "maxDuration": 30
     }
-  ],
-  "routes": [
-    { "src": "/api/auth/register",                    "dest": "/api/auth/register.php" },
-    { "src": "/api/auth/login",                       "dest": "/api/auth/login.php" },
-    { "src": "/api/auth/refresh",                     "dest": "/api/auth/refresh.php" },
-    { "src": "/api/dashboard/kpis",                   "dest": "/api/dashboard/kpis.php" },
-    { "src": "/api/debt-engine/plan",                 "dest": "/api/debt-engine/plan.php" },
-    { "src": "/api/cards/([^/]+)/avl-update",         "dest": "/api/cards/avl-update.php" },
-    { "src": "/api/cards/([^/]+)/transactions",       "dest": "/api/cards/transactions.php" },
-    { "src": "/api/cards/([^/]+)",                    "dest": "/api/cards/id.php" },
-    { "src": "/api/cards",                            "dest": "/api/cards/index.php" },
-    { "src": "/api/loans/([^/]+)/emi-paid",           "dest": "/api/loans/emi-paid.php" },
-    { "src": "/api/loans/([^/]+)",                    "dest": "/api/loans/id.php" },
-    { "src": "/api/loans",                            "dest": "/api/loans/index.php" },
-    { "src": "/api/payables/([^/]+)/pay",             "dest": "/api/payables/pay.php" },
-    { "src": "/api/payables/([^/]+)",                 "dest": "/api/payables/id.php" },
-    { "src": "/api/payables",                         "dest": "/api/payables/index.php" },
-    { "src": "/api/recoveries/([^/]+)/record",        "dest": "/api/recoveries/record.php" },
-    { "src": "/api/recoveries/([^/]+)",               "dest": "/api/recoveries/id.php" },
-    { "src": "/api/recoveries",                       "dest": "/api/recoveries/index.php" },
-    { "src": "/api/bullion/summary",                  "dest": "/api/bullion/summary.php" },
-    { "src": "/api/bullion/transactions/([^/]+)",     "dest": "/api/bullion/transactions.php" },
-    { "src": "/api/bullion/transactions",             "dest": "/api/bullion/transactions.php" },
-    { "src": "/api/bullion",                          "dest": "/api/bullion/index.php" },
-    { "src": "/api/activity",                         "dest": "/api/activity/index.php" },
-    { "src": "/api/backup/export",                    "dest": "/api/backup/export.php" },
-    { "src": "/api/backup/import",                    "dest": "/api/backup/import.php" },
-    { "src": "/api/backup/reset-seed",                "dest": "/api/backup/reset-seed.php" },
-    { "src": "/api/(.*)",                             "dest": "/api/index.php" }
-  ],
-  "env": {
-    "DB_HOST":    "@db_host",
-    "DB_NAME":    "@db_name",
-    "DB_USER":    "@db_user",
-    "DB_PASS":    "@db_pass",
-    "DB_PORT":    "@db_port",
-    "JWT_SECRET": "@jwt_secret",
-    "APP_ENV":    "production"
   },
+  "rewrites": [
+    { "source": "/api/auth/register",                    "destination": "/api/auth/register.php" },
+    { "source": "/api/auth/login",                       "destination": "/api/auth/login.php" },
+    { "source": "/api/auth/refresh",                     "destination": "/api/auth/refresh.php" },
+    { "source": "/api/dashboard/kpis",                   "destination": "/api/dashboard/kpis.php" },
+    { "source": "/api/debt-engine/plan",                 "destination": "/api/debt-engine/plan.php" },
+    { "source": "/api/cards/([^/]+)/avl-update",         "destination": "/api/cards/avl-update.php" },
+    { "source": "/api/cards/([^/]+)/transactions",       "destination": "/api/cards/transactions.php" },
+    { "source": "/api/cards/([^/]+)",                    "destination": "/api/cards/id.php" },
+    { "source": "/api/cards",                            "destination": "/api/cards/index.php" },
+    { "source": "/api/loans/([^/]+)/emi-paid",           "destination": "/api/loans/emi-paid.php" },
+    { "source": "/api/loans/([^/]+)",                    "destination": "/api/loans/id.php" },
+    { "source": "/api/loans",                            "destination": "/api/loans/index.php" },
+    { "source": "/api/payables/([^/]+)/pay",             "destination": "/api/payables/pay.php" },
+    { "source": "/api/payables/([^/]+)",                 "destination": "/api/payables/id.php" },
+    { "source": "/api/payables",                         "destination": "/api/payables/index.php" },
+    { "source": "/api/recoveries/([^/]+)/record",        "destination": "/api/recoveries/record.php" },
+    { "source": "/api/recoveries/([^/]+)",               "destination": "/api/recoveries/id.php" },
+    { "source": "/api/recoveries",                       "destination": "/api/recoveries/index.php" },
+    { "source": "/api/bullion/summary",                  "destination": "/api/bullion/summary.php" },
+    { "source": "/api/bullion/transactions/([^/]+)",     "destination": "/api/bullion/transactions.php" },
+    { "source": "/api/bullion/transactions",             "destination": "/api/bullion/transactions.php" },
+    { "source": "/api/bullion",                          "destination": "/api/bullion/index.php" },
+    { "source": "/api/activity",                         "destination": "/api/activity/index.php" },
+    { "source": "/api/backup/export",                    "destination": "/api/backup/export.php" },
+    { "source": "/api/backup/import",                    "destination": "/api/backup/import.php" },
+    { "source": "/api/backup/reset-seed",                "destination": "/api/backup/reset-seed.php" },
+    { "source": "/(.*)",                                 "destination": "/api/index.php" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Authorization, Content-Type" },
+        { "key": "Access-Control-Allow-Headers", "value": "Authorization, Content-Type, X-Requested-With" },
         { "key": "X-Content-Type-Options",       "value": "nosniff" },
         { "key": "X-Frame-Options",              "value": "DENY" }
       ]
