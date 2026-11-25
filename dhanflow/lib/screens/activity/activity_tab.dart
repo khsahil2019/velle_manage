@@ -9,6 +9,7 @@ import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../services/export_service.dart';
 import '../../widgets/common/dhan_ui.dart';
+import '../auth/auth_screen.dart';
 
 class ActivityTab extends StatelessWidget {
   const ActivityTab({super.key});
@@ -24,109 +25,149 @@ class ActivityTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
-            // Backup & Snapshot Controls
+            // Account & Backend Data Storage Card
             const SectionHeader(
-              title: 'Backup, Restore & Cloud Sync',
-              subtitle: 'Local Hive storage + Vercel PHP Backend sync',
+              title: 'Account & Cloud Backend Storage',
+              subtitle: 'Sign in or create an account to persist data in PHP + Cloud DB',
             ),
             const SizedBox(height: 10),
             DhanCard(
+              borderColor: authState is AuthAuthenticated
+                  ? AppColors.accentGreen.withValues(alpha: 0.35)
+                  : AppColors.border,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await ExportService.exportBackup(state.appState);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('JSON backup exported / copied')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.download_rounded, size: 16),
-                        label: const Text('Export JSON'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () => _showImportSheet(context),
-                        icon: const Icon(Icons.upload_rounded, size: 16),
-                        label: const Text('Import JSON'),
-                      ),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.accentRose,
-                          side: const BorderSide(color: AppColors.accentRose),
-                        ),
-                        onPressed: () => _confirmReset(context),
-                        icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                        label: const Text('Reset Snapshot'),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  // Vercel PHP Cloud Sync Section
                   Row(
                     children: [
-                      Icon(
-                        authState is AuthAuthenticated
-                            ? Icons.cloud_done_rounded
-                            : Icons.cloud_off_rounded,
-                        color: authState is AuthAuthenticated
-                            ? AppColors.accentGreen
-                            : AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
+                      if (authState is AuthAuthenticated)
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.greenDim,
+                          child: Text(
+                            authState.initials,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accentGreen,
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.bgHover,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.cloud_off_rounded, color: AppColors.textTertiary),
+                        ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               authState is AuthAuthenticated
-                                  ? 'Connected: ${authState.user['email']}'
-                                  : 'Offline Mode (Local Hive Storage)',
+                                  ? '${authState.user['name']} (${authState.user['email']})'
+                                  : 'Offline Guest Mode (Local Hive)',
                               style: AppTextStyles.cardTitle,
                             ),
                             Text(
-                              'API: ${state.appState.settings.apiBaseUrl}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              authState is AuthAuthenticated
+                                  ? 'Auto-sync enabled · Storage: ${(authState.storageDriver ?? 'Cloud DB').toUpperCase()}'
+                                  : 'Sign in to automatically store & sync data across devices',
                               style: AppTextStyles.caption,
                             ),
                           ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => _showCloudSyncSheet(context, state.appState.settings.apiBaseUrl),
-                        child: Text(authState is AuthAuthenticated ? 'Manage' : 'Connect'),
-                      ),
                     ],
                   ),
-                  if (authState is AuthAuthenticated) ...[
-                    const SizedBox(height: 10),
+                  const SizedBox(height: 14),
+                  if (authState is AuthAuthenticated)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: state.isSyncing ? null : () => cubit.pushToCloud(),
+                          icon: const Icon(Icons.cloud_upload_outlined, size: 16),
+                          label: const Text('Push to Cloud'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: state.isSyncing ? null : () => cubit.pullFromCloud(),
+                          icon: const Icon(Icons.cloud_download_outlined, size: 16),
+                          label: const Text('Pull from Cloud'),
+                        ),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.accentRose,
+                            side: BorderSide(color: AppColors.accentRose.withValues(alpha: 0.5)),
+                          ),
+                          onPressed: () => context.read<AuthCubit>().logout(),
+                          icon: const Icon(Icons.logout_rounded, size: 16),
+                          label: const Text('Sign Out'),
+                        ),
+                      ],
+                    )
+                  else
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: state.isSyncing ? null : () => cubit.pushToCloud(),
-                            icon: const Icon(Icons.cloud_upload_outlined, size: 16),
-                            label: const Text('Push Local → Cloud'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: state.isSyncing ? null : () => cubit.pullFromCloud(),
-                            icon: const Icon(Icons.cloud_download_outlined, size: 16),
-                            label: const Text('Pull Cloud → Local'),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const AuthScreen()),
+                              );
+                            },
+                            icon: const Icon(Icons.login_rounded, size: 16),
+                            label: const Text('Sign In / Create Account'),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+            const SectionHeader(
+              title: 'Local JSON Backup & Snapshot',
+              subtitle: 'Portable JSON export, restore, or reset',
+            ),
+            const SizedBox(height: 10),
+            DhanCard(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await ExportService.exportBackup(state.appState);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('JSON backup exported / copied')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.download_rounded, size: 16),
+                    label: const Text('Export JSON'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _showImportSheet(context),
+                    icon: const Icon(Icons.upload_rounded, size: 16),
+                    label: const Text('Import JSON'),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accentRose,
+                      side: const BorderSide(color: AppColors.accentRose),
+                    ),
+                    onPressed: () => _confirmReset(context),
+                    icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                    label: const Text('Reset Snapshot'),
+                  ),
                 ],
               ),
             ),
@@ -289,123 +330,5 @@ class ActivityTab extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _showCloudSyncSheet(BuildContext context, String currentUrl) {
-    final urlCtrl = TextEditingController(text: currentUrl);
-    final nameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final passCtrl = TextEditingController();
-    bool isRegister = false;
-
-    showDhanBottomSheet(context, builder: (ctx) {
-      return StatefulBuilder(builder: (ctx, setSheetState) {
-        final authState = ctx.watch<AuthCubit>().state;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Vercel PHP Cloud Sync', style: AppTextStyles.sectionTitle),
-            const SizedBox(height: 10),
-            TextField(
-              controller: urlCtrl,
-              decoration: InputDecoration(
-                labelText: 'Vercel PHP API Base URL',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.save_rounded, color: AppColors.accentGreen),
-                  onPressed: () => context.read<DhanflowCubit>().updateApiBaseUrl(urlCtrl.text),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (authState is AuthAuthenticated) ...[
-              Text('Signed in as ${authState.user['name']} (${authState.user['email']})',
-                  style: AppTextStyles.body),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(foregroundColor: AppColors.accentRose),
-                onPressed: () {
-                  context.read<AuthCubit>().logout();
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Sign Out (Switch to Offline Mode)'),
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text('Login'),
-                      selected: !isRegister,
-                      selectedColor: AppColors.accentGreen,
-                      labelStyle: TextStyle(
-                          color: !isRegister ? Colors.black : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700),
-                      onSelected: (_) => setSheetState(() => isRegister = false),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text('Create Account'),
-                      selected: isRegister,
-                      selectedColor: AppColors.accentGreen,
-                      labelStyle: TextStyle(
-                          color: isRegister ? Colors.black : AppColors.textSecondary,
-                          fontWeight: FontWeight.w700),
-                      onSelected: (_) => setSheetState(() => isRegister = true),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (isRegister) ...[
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Full Name')),
-                const SizedBox(height: 10),
-              ],
-              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
-              const SizedBox(height: 10),
-              TextField(
-                controller: passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password (min 8 chars)'),
-              ),
-              if (authState is AuthError) ...[
-                const SizedBox(height: 8),
-                Text(authState.message, style: const TextStyle(color: AppColors.accentRose, fontSize: 12)),
-              ],
-              const SizedBox(height: 14),
-              ElevatedButton(
-                onPressed: authState is AuthLoading
-                    ? null
-                    : () async {
-                        context.read<DhanflowCubit>().updateApiBaseUrl(urlCtrl.text);
-                        final authCubit = context.read<AuthCubit>();
-                        if (isRegister) {
-                          await authCubit.register(
-                            name: nameCtrl.text,
-                            email: emailCtrl.text,
-                            password: passCtrl.text,
-                          );
-                        } else {
-                          await authCubit.login(
-                            email: emailCtrl.text,
-                            password: passCtrl.text,
-                          );
-                        }
-                        if (ctx.mounted && context.read<AuthCubit>().state is AuthAuthenticated) {
-                          Navigator.pop(ctx);
-                        }
-                      },
-                child: Text(authState is AuthLoading
-                    ? 'Connecting...'
-                    : isRegister
-                        ? 'Register & Connect'
-                        : 'Sign In'),
-              ),
-            ],
-          ],
-        );
-      });
-    });
   }
 }

@@ -36,6 +36,8 @@ $target = match (true) {
     $route === 'auth/register' => $apiRoot . '/auth/register.php',
     $route === 'auth/login'    => $apiRoot . '/auth/login.php',
     $route === 'auth/refresh'  => $apiRoot . '/auth/refresh.php',
+    $route === 'auth/me'       => $apiRoot . '/auth/me.php',
+    $route === 'auth/logout'   => $apiRoot . '/auth/logout.php',
 
     // Dashboard & Debt Engine
     $route === 'dashboard/kpis'   => $apiRoot . '/dashboard/kpis.php',

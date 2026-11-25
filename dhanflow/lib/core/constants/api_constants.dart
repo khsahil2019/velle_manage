@@ -19,6 +19,8 @@ class ApiConstants {
   static const String register = '/api/auth/register';
   static const String login = '/api/auth/login';
   static const String refresh = '/api/auth/refresh';
+  static const String authMe = '/api/auth/me';
+  static const String authLogout = '/api/auth/logout';
   static const String kpis = '/api/dashboard/kpis';
   static const String debtPlan = '/api/debt-engine/plan';
   static const String cards = '/api/cards';

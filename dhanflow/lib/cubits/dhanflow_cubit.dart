@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/kpi_snapshot.dart';
@@ -6,12 +7,17 @@ import '../repositories/dhanflow_repository.dart';
 import '../services/debt_engine.dart';
 import '../services/kpi_calculator.dart';
 
+enum CloudSyncStatus { offline, syncing, synced, error }
+
 class DhanflowViewState extends Equatable {
   final DhanflowAppState appState;
   final KPISnapshot kpis;
   final DebtPayoffPlan payoffPlan;
   final bool canUndo;
   final bool isSyncing;
+  final CloudSyncStatus syncStatus;
+  final DateTime? lastSyncedAt;
+  final bool hideBalances;
   final String? flashMessage;
   final String? errorMessage;
 
@@ -21,6 +27,9 @@ class DhanflowViewState extends Equatable {
     required this.payoffPlan,
     required this.canUndo,
     this.isSyncing = false,
+    this.syncStatus = CloudSyncStatus.offline,
+    this.lastSyncedAt,
+    this.hideBalances = false,
     this.flashMessage,
     this.errorMessage,
   });
@@ -31,6 +40,9 @@ class DhanflowViewState extends Equatable {
     DebtPayoffPlan? payoffPlan,
     bool? canUndo,
     bool? isSyncing,
+    CloudSyncStatus? syncStatus,
+    DateTime? lastSyncedAt,
+    bool? hideBalances,
     String? Function()? flashMessage,
     String? Function()? errorMessage,
   }) =>
@@ -40,6 +52,9 @@ class DhanflowViewState extends Equatable {
         payoffPlan: payoffPlan ?? this.payoffPlan,
         canUndo: canUndo ?? this.canUndo,
         isSyncing: isSyncing ?? this.isSyncing,
+        syncStatus: syncStatus ?? this.syncStatus,
+        lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+        hideBalances: hideBalances ?? this.hideBalances,
         flashMessage: flashMessage != null ? flashMessage() : null,
         errorMessage: errorMessage != null ? errorMessage() : null,
       );
@@ -51,19 +66,27 @@ class DhanflowViewState extends Equatable {
         payoffPlan,
         canUndo,
         isSyncing,
+        syncStatus,
+        lastSyncedAt,
+        hideBalances,
         flashMessage,
-        errorMessage
+        errorMessage,
       ];
 }
 
 class DhanflowCubit extends Cubit<DhanflowViewState> {
   final DhanflowRepository repository;
+  Timer? _syncDebounce;
 
   DhanflowCubit({required this.repository}) : super(_initialState(repository));
 
   static DhanflowViewState _initialState(DhanflowRepository repo) {
     final appState = repo.loadLocalState();
-    return _buildViewState(appState, repo.canUndo);
+    return _buildViewState(
+      appState,
+      repo.canUndo,
+      syncStatus: repo.isAuthenticated ? CloudSyncStatus.synced : CloudSyncStatus.offline,
+    );
   }
 
   static DhanflowViewState _buildViewState(
@@ -72,6 +95,9 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
     String? flash,
     String? error,
     bool isSyncing = false,
+    CloudSyncStatus syncStatus = CloudSyncStatus.offline,
+    DateTime? lastSyncedAt,
+    bool hideBalances = false,
   }) {
     final kpis = KPICalculator.compute(appState);
     final plan = DebtEngine.simulate(
@@ -85,19 +111,85 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       payoffPlan: plan,
       canUndo: canUndo,
       isSyncing: isSyncing,
+      syncStatus: syncStatus,
+      lastSyncedAt: lastSyncedAt,
+      hideBalances: hideBalances,
       flashMessage: flash,
       errorMessage: error,
     );
   }
 
-  void _apply(DhanflowAppState Function(DhanflowAppState s) mutation,
-      {String? successMsg}) {
+  void toggleHideBalances() {
+    emit(state.copyWith(hideBalances: !state.hideBalances));
+  }
+
+  void _apply(DhanflowAppState Function(DhanflowAppState s) mutation, {String? successMsg}) {
     try {
       final next = mutation(state.appState);
-      emit(_buildViewState(next, repository.canUndo, flash: successMsg));
+      final authed = repository.isAuthenticated;
+      emit(_buildViewState(
+        next,
+        repository.canUndo,
+        flash: successMsg,
+        syncStatus: authed ? CloudSyncStatus.syncing : CloudSyncStatus.offline,
+        lastSyncedAt: state.lastSyncedAt,
+        hideBalances: state.hideBalances,
+      ));
+      if (authed) {
+        _scheduleAutoCloudSync();
+      }
     } catch (e) {
       emit(state.copyWith(errorMessage: () => e.toString()));
     }
+  }
+
+  void _scheduleAutoCloudSync() {
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(milliseconds: 650), () async {
+      await _syncSilently();
+    });
+  }
+
+  Future<void> _syncSilently() async {
+    if (!repository.isAuthenticated) return;
+    try {
+      await repository.pushLocalSnapshotToCloud(state.appState, silent: true);
+      if (!isClosed) {
+        emit(state.copyWith(
+          isSyncing: false,
+          syncStatus: CloudSyncStatus.synced,
+          lastSyncedAt: DateTime.now(),
+        ));
+      }
+    } catch (_) {
+      if (!isClosed) {
+        emit(state.copyWith(
+          isSyncing: false,
+          syncStatus: CloudSyncStatus.error,
+        ));
+      }
+    }
+  }
+
+  /// Called automatically after Sign In or Sign Up succeeds.
+  Future<void> handleAuthConnected({
+    required bool justSignedUp,
+    required bool uploadLocalOnSignup,
+  }) async {
+    if (justSignedUp && uploadLocalOnSignup) {
+      await pushToCloud();
+    } else {
+      await pullFromCloud();
+    }
+  }
+
+  void handleSignedOut() {
+    _syncDebounce?.cancel();
+    emit(state.copyWith(
+      isSyncing: false,
+      syncStatus: CloudSyncStatus.offline,
+      flashMessage: () => 'Signed out — switched to local storage mode',
+    ));
   }
 
   void clearMessages() {
@@ -110,23 +202,14 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
         successMsg: 'Available limit updated',
       );
 
-  void recordCardTransaction(String cardId,
-          {required bool isPayment,
-          required int amountPaise,
-          String note = ''}) =>
+  void recordCardTransaction(String cardId, {required bool isPayment, required int amountPaise, String note = ''}) =>
       _apply(
         (s) => repository.recordCardTransaction(s,
-            cardId: cardId,
-            isPayment: isPayment,
-            amountPaise: amountPaise,
-            note: note),
+            cardId: cardId, isPayment: isPayment, amountPaise: amountPaise, note: note),
         successMsg: isPayment ? 'Payment recorded' : 'Spend recorded',
       );
 
-  void updateCardDetails(String cardId,
-          {required int newTotalLimitPaise,
-          String? categoryTag,
-          int? aprBps}) =>
+  void updateCardDetails(String cardId, {required int newTotalLimitPaise, String? categoryTag, int? aprBps}) =>
       _apply(
         (s) => repository.updateCardDetails(s,
             cardId: cardId,
@@ -186,16 +269,13 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       );
 
   void payPersonalPayable(String payableId, int amountPaise) => _apply(
-        (s) => repository.payPersonalPayable(s,
-            payableId: payableId, amountPaise: amountPaise),
+        (s) => repository.payPersonalPayable(s, payableId: payableId, amountPaise: amountPaise),
         successMsg: 'Payable updated',
       );
 
-  void addPersonalPayable(
-          {required String name, required int amountPaise, String note = ''}) =>
+  void addPersonalPayable({required String name, required int amountPaise, String note = ''}) =>
       _apply(
-        (s) => repository.addPersonalPayable(s,
-            name: name, amountPaise: amountPaise, note: note),
+        (s) => repository.addPersonalPayable(s, name: name, amountPaise: amountPaise, note: note),
         successMsg: '$name added',
       );
 
@@ -221,11 +301,8 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
             : 'Recovery payment recorded',
       );
 
-  void addBorrower(
-          {required String name, required int amountPaise, String note = ''}) =>
-      _apply(
-        (s) => repository.addBorrower(s,
-            name: name, amountPaise: amountPaise, note: note),
+  void addBorrower({required String name, required int amountPaise, String note = ''}) => _apply(
+        (s) => repository.addBorrower(s, name: name, amountPaise: amountPaise, note: note),
         successMsg: '$name added',
       );
 
@@ -259,20 +336,42 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
   void updateSellPrice(String metal, int? sellPricePaise) {
     final next = repository.updateSellPrice(state.appState,
         metal: metal, sellPricePaise: sellPricePaise);
-    emit(_buildViewState(next, repository.canUndo));
+    emit(_buildViewState(
+      next,
+      repository.canUndo,
+      syncStatus: repository.isAuthenticated ? CloudSyncStatus.syncing : CloudSyncStatus.offline,
+      lastSyncedAt: state.lastSyncedAt,
+      hideBalances: state.hideBalances,
+    ));
+    if (repository.isAuthenticated) _scheduleAutoCloudSync();
   }
 
   void updateDebtEngine({String? strategy, int? monthlyBudgetPaise}) {
     final next = repository.updateDebtEngineSettings(state.appState,
         strategy: strategy, monthlyBudgetPaise: monthlyBudgetPaise);
-    emit(_buildViewState(next, repository.canUndo));
+    emit(_buildViewState(
+      next,
+      repository.canUndo,
+      syncStatus: repository.isAuthenticated ? CloudSyncStatus.syncing : CloudSyncStatus.offline,
+      lastSyncedAt: state.lastSyncedAt,
+      hideBalances: state.hideBalances,
+    ));
+    if (repository.isAuthenticated) _scheduleAutoCloudSync();
   }
 
   void undoLastAction() {
     final restored = repository.undoLastAction(state.appState);
     if (restored != null) {
-      emit(_buildViewState(restored, repository.canUndo,
-          flash: 'Reverted last action'));
+      final authed = repository.isAuthenticated;
+      emit(_buildViewState(
+        restored,
+        repository.canUndo,
+        flash: 'Reverted last action',
+        syncStatus: authed ? CloudSyncStatus.syncing : CloudSyncStatus.offline,
+        lastSyncedAt: state.lastSyncedAt,
+        hideBalances: state.hideBalances,
+      ));
+      if (authed) _scheduleAutoCloudSync();
     }
   }
 
@@ -291,30 +390,73 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       settings: state.appState.settings.copyWith(apiBaseUrl: url.trim()),
     );
     repository.apiClient.updateBaseUrl(url);
-    emit(_buildViewState(next, repository.canUndo, flash: 'API URL updated'));
+    emit(_buildViewState(
+      next,
+      repository.canUndo,
+      flash: 'API URL updated',
+      syncStatus: state.syncStatus,
+      lastSyncedAt: state.lastSyncedAt,
+      hideBalances: state.hideBalances,
+    ));
   }
 
   Future<void> pushToCloud() async {
-    emit(state.copyWith(isSyncing: true));
+    emit(state.copyWith(
+      isSyncing: true,
+      syncStatus: CloudSyncStatus.syncing,
+    ));
     try {
-      await repository.pushLocalSnapshotToCloud(state.appState);
-      emit(_buildViewState(state.appState, repository.canUndo,
-          flash: 'Synced to Vercel PHP Cloud'));
+      await repository.pushLocalSnapshotToCloud(state.appState, silent: false);
+      emit(_buildViewState(
+        state.appState,
+        repository.canUndo,
+        flash: 'Saved to Cloud Backend Storage',
+        syncStatus: CloudSyncStatus.synced,
+        lastSyncedAt: DateTime.now(),
+        hideBalances: state.hideBalances,
+      ));
     } catch (e) {
-      emit(_buildViewState(state.appState, repository.canUndo,
-          error: e.toString()));
+      emit(_buildViewState(
+        state.appState,
+        repository.canUndo,
+        error: e.toString(),
+        syncStatus: CloudSyncStatus.error,
+        lastSyncedAt: state.lastSyncedAt,
+        hideBalances: state.hideBalances,
+      ));
     }
   }
 
   Future<void> pullFromCloud() async {
-    emit(state.copyWith(isSyncing: true));
+    emit(state.copyWith(
+      isSyncing: true,
+      syncStatus: CloudSyncStatus.syncing,
+    ));
     try {
       final restored = await repository.pullCloudSnapshot(state.appState);
-      emit(_buildViewState(restored, repository.canUndo,
-          flash: 'Pulled latest cloud snapshot'));
+      emit(_buildViewState(
+        restored,
+        repository.canUndo,
+        flash: 'Loaded financial data from Cloud Backend',
+        syncStatus: CloudSyncStatus.synced,
+        lastSyncedAt: DateTime.now(),
+        hideBalances: state.hideBalances,
+      ));
     } catch (e) {
-      emit(_buildViewState(state.appState, repository.canUndo,
-          error: e.toString()));
+      emit(_buildViewState(
+        state.appState,
+        repository.canUndo,
+        error: e.toString(),
+        syncStatus: CloudSyncStatus.error,
+        lastSyncedAt: state.lastSyncedAt,
+        hideBalances: state.hideBalances,
+      ));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _syncDebounce?.cancel();
+    return super.close();
   }
 }

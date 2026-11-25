@@ -15,6 +15,7 @@ class RecoveriesTab extends StatelessWidget {
       builder: (context, state) {
         final recoveries = state.appState.recoveries;
         final cubit = context.read<DhanflowCubit>();
+        final hidden = state.hideBalances;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -22,7 +23,7 @@ class RecoveriesTab extends StatelessWidget {
             SectionHeader(
               title: 'Kul Lena — Pending Recoveries',
               subtitle:
-                  'Total Receivable: ${state.kpis.kulLenaFormatted} across ${recoveries.length} people',
+                  'Total Receivable: ${hidden ? '₹ ••••••' : state.kpis.kulLenaFormatted} across ${recoveries.length} people',
               trailing: ElevatedButton.icon(
                 onPressed: () => _showAddBorrowerSheet(context),
                 icon: const Icon(Icons.person_add_alt_1_rounded, size: 15),
@@ -60,6 +61,8 @@ class RecoveriesTab extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            BankAvatarBadge(name: rec.name, overrideColor: AppColors.accentGreen),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,13 +79,12 @@ class RecoveriesTab extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  rec.pendingFormatted,
-                                  style: TextStyle(
+                                  hidden ? '₹ ••••••' : rec.pendingFormatted,
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: rec.isSettled
-                                        ? AppColors.accentGreen
-                                        : AppColors.accentGreen,
+                                    fontFeatures: [FontFeature.tabularFigures()],
+                                    color: AppColors.accentGreen,
                                   ),
                                 ),
                                 Text(
@@ -119,8 +121,8 @@ class RecoveriesTab extends StatelessWidget {
                           children: [
                             if (!rec.isSettled)
                               ElevatedButton.icon(
-                                onPressed: () =>
-                                    _showRecordRecoverySheet(context, rec, state.appState.creditCards),
+                                onPressed: () => _showRecordRecoverySheet(
+                                    context, rec, state.appState.creditCards),
                                 icon: const Icon(Icons.bolt_rounded, size: 16),
                                 label: const Text('Record Payment Received'),
                               )
@@ -147,7 +149,7 @@ class RecoveriesTab extends StatelessWidget {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(p.amountFormatted,
+                                    Text(hidden ? '₹ ••••' : p.amountFormatted,
                                         style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
@@ -291,9 +293,8 @@ class RecoveriesTab extends StatelessWidget {
                           Text('${selectedCard.name} Outstanding After',
                               style: AppTextStyles.caption),
                           Text(
-                            INRFormatter.formatPaise(
-                                (selectedCard.outstandingPaise - amtPaise)
-                                    .clamp(0, selectedCard.totalLimitPaise)),
+                            INRFormatter.formatPaise((selectedCard.outstandingPaise - amtPaise)
+                                .clamp(0, selectedCard.totalLimitPaise)),
                             style: const TextStyle(
                                 fontWeight: FontWeight.w800, color: AppColors.accentGreen),
                           ),

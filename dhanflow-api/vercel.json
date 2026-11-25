@@ -11,6 +11,8 @@
     { "source": "/api/auth/register",                    "destination": "/api/auth/register.php" },
     { "source": "/api/auth/login",                       "destination": "/api/auth/login.php" },
     { "source": "/api/auth/refresh",                     "destination": "/api/auth/refresh.php" },
+    { "source": "/api/auth/me",                          "destination": "/api/auth/me.php" },
+    { "source": "/api/auth/logout",                      "destination": "/api/auth/logout.php" },
     { "source": "/api/dashboard/kpis",                   "destination": "/api/dashboard/kpis.php" },
     { "source": "/api/debt-engine/plan",                 "destination": "/api/debt-engine/plan.php" },
     { "source": "/api/cards/([^/]+)/avl-update",         "destination": "/api/cards/avl-update.php" },

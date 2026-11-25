@@ -160,9 +160,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DHANFLOW'), findsOneWidget);
-      expect(find.text('₹2,32,640.84'), findsOneWidget);
-      expect(find.text('₹1,71,759.11'), findsOneWidget);
-      expect(find.text('₹52,204.84'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('₹2,32,640.84'), findsWidgets);
+      expect(find.text('₹1,71,759.11'), findsWidgets);
+      expect(find.text('₹52,204.84'), findsWidgets);
 
       await tester.tap(find.text('Debt'));
       await tester.pumpAndSettle();
@@ -298,9 +299,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DHANFLOW'), findsOneWidget);
-      expect(find.text('₹2,32,640.84'), findsOneWidget);
-      expect(find.text('₹1,71,759.11'), findsOneWidget);
-      expect(find.text('₹52,204.84'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('₹2,32,640.84'), findsWidgets);
+      expect(find.text('₹1,71,759.11'), findsWidgets);
+      expect(find.text('₹52,204.84'), findsWidgets);
 
       await tester.tap(find.text('Debt'));
       await tester.pumpAndSettle();

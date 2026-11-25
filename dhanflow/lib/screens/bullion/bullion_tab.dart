@@ -16,6 +16,7 @@ class BullionTab extends StatelessWidget {
       builder: (context, state) {
         final kpi = state.kpis;
         final txns = state.appState.bullionTransactions;
+        final hidden = state.hideBalances;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -38,6 +39,7 @@ class BullionTab extends StatelessWidget {
               accentColor: AppColors.accentAmber,
               stats: kpi.goldStats,
               txns: txns.where((t) => t.metal == 'gold').toList(),
+              hidden: hidden,
             ),
             const SizedBox(height: 14),
             _MetalSummaryCard(
@@ -46,6 +48,7 @@ class BullionTab extends StatelessWidget {
               accentColor: AppColors.textSecondary,
               stats: kpi.silverStats,
               txns: txns.where((t) => t.metal == 'silver').toList(),
+              hidden: hidden,
             ),
           ],
         );
@@ -191,7 +194,10 @@ class BullionTab extends StatelessWidget {
               icon: const Icon(Icons.calendar_today_rounded, size: 15),
               label: Text('Purchase Date: ${INRFormatter.formatDateTime(selectedDate)}'),
             ),
-            if (paidPreview != null && preGstPreview != null && gstPreview != null && ratePreview != null) ...[
+            if (paidPreview != null &&
+                preGstPreview != null &&
+                gstPreview != null &&
+                ratePreview != null) ...[
               const SizedBox(height: 10),
               DhanCard(
                 backgroundColor: AppColors.bgHover,
@@ -237,6 +243,7 @@ class _MetalSummaryCard extends StatefulWidget {
   final Color accentColor;
   final BullionStats stats;
   final List<BullionTransactionModel> txns;
+  final bool hidden;
 
   const _MetalSummaryCard({
     required this.title,
@@ -244,6 +251,7 @@ class _MetalSummaryCard extends StatefulWidget {
     required this.accentColor,
     required this.stats,
     required this.txns,
+    required this.hidden,
   });
 
   @override
@@ -275,8 +283,18 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
     final pl = s.unrealisedPLPaise;
     final sellVal = s.currentSellValuePaise;
     final cubit = context.read<DhanflowCubit>();
+    final h = widget.hidden;
 
     return DhanCard(
+      borderColor: widget.accentColor.withValues(alpha: 0.25),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          AppColors.bgCard,
+          widget.accentColor.withValues(alpha: 0.06),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -302,19 +320,18 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
             crossAxisSpacing: 10,
             mainAxisSpacing: 6,
             children: [
-              _MetricCell('Avg Buy (Pre-GST)', s.avgRateFormatted),
-              _MetricCell('Effective Cost (Incl. GST)', s.effectiveCostFormatted),
-              _MetricCell('Pre-GST Asset Value', s.assetValueFormatted,
+              _MetricCell('Avg Buy (Pre-GST)', h ? '₹ •••••' : s.avgRateFormatted),
+              _MetricCell('Effective Cost (Incl. GST)', h ? '₹ •••••' : s.effectiveCostFormatted),
+              _MetricCell('Pre-GST Asset Value', h ? '₹ •••••' : s.assetValueFormatted,
                   color: AppColors.accentGreen),
-              _MetricCell('Total Cash Paid', s.totalPaidFormatted),
-              _MetricCell('Total 3% GST Paid', s.gstPaidFormatted, color: AppColors.accentRose),
-              _MetricCell('Break-Even Sell/gm', s.effectiveCostFormatted,
+              _MetricCell('Total Cash Paid', h ? '₹ •••••' : s.totalPaidFormatted),
+              _MetricCell('Total 3% GST Paid', h ? '₹ •••' : s.gstPaidFormatted,
+                  color: AppColors.accentRose),
+              _MetricCell('Break-Even Sell/gm', h ? '₹ •••••' : s.effectiveCostFormatted,
                   color: AppColors.accentAmber),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Live Valuation Simulator
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -329,7 +346,7 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 const Text(
-                  'Enter platform live sell price (/gm). Break-even accounts for purchase GST; check platform buy/sell spread before selling.',
+                  'Enter platform live sell price (/gm). Break-even accounts for purchase GST; check platform spread before selling.',
                   style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
                 ),
                 const SizedBox(height: 8),
@@ -357,7 +374,7 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('EST. SELL VALUE', style: AppTextStyles.label),
-                          Text(INRFormatter.formatPaise(sellVal),
+                          Text(h ? '₹ •••••' : INRFormatter.formatPaise(sellVal),
                               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                         ],
                       ),
@@ -366,7 +383,9 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                         children: [
                           const Text('UNREALISED P/L', style: AppTextStyles.label),
                           Text(
-                            '${pl >= 0 ? '+' : ''}${INRFormatter.formatPaise(pl)} (${s.returnPct?.toStringAsFixed(2) ?? '0.00'}%)',
+                            h
+                                ? '₹ ••••'
+                                : '${pl >= 0 ? '+' : ''}${INRFormatter.formatPaise(pl)} (${s.returnPct?.toStringAsFixed(2) ?? '0.00'}%)',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
@@ -381,7 +400,6 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
               ],
             ),
           ),
-
           const SizedBox(height: 14),
           const Text('Purchase History', style: AppTextStyles.label),
           const SizedBox(height: 6),
@@ -396,16 +414,17 @@ class _MetalSummaryCardState extends State<_MetalSummaryCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${t.gramsFormatted} @ ${t.rateFormatted}',
+                            Text(
+                                '${t.gramsFormatted} @ ${h ? '₹ •••••' : t.rateFormatted}',
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                             Text(
-                              '${INRFormatter.formatDateTime(t.purchaseDate)} · Pre-GST ${t.preGstFormatted} + GST ${t.gstFormatted}',
+                              '${INRFormatter.formatDateTime(t.purchaseDate)} · Pre-GST ${h ? '₹ ••••' : t.preGstFormatted} + GST ${h ? '₹ ••' : t.gstFormatted}',
                               style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
                             ),
                           ],
                         ),
                       ),
-                      Text(t.totalPaidFormatted,
+                      Text(h ? '₹ ••••' : t.totalPaidFormatted,
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.accentRose),
@@ -437,7 +456,10 @@ class _MetricCell extends StatelessWidget {
         const SizedBox(height: 2),
         Text(value,
             style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: color ?? AppColors.textPrimary)),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                color: color ?? AppColors.textPrimary)),
       ],
     );
   }

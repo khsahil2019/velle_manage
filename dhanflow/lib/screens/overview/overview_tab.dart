@@ -15,22 +15,41 @@ class OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DhanflowCubit, DhanflowViewState>(
       builder: (context, state) {
+        final cubit = context.read<DhanflowCubit>();
         final kpi = state.kpis;
         final plan = state.payoffPlan;
+        final hidden = state.hideBalances;
         final width = MediaQuery.of(context).size.width;
-        final crossCount = width >= 960 ? 3 : 2;
+        final crossCount = width >= 920 ? 3 : 2;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
-            // Hero KPI Grid — Four separated concepts
+            // Hero Financial Command Card
+            HeroCommandCard(
+              title: 'True Net Liability (After Bullion Cost Basis)',
+              mainValue: kpi.trueNetFormatted,
+              subtitle:
+                  'Net before bullion: ${hidden ? '₹ ••••••' : kpi.asalNetDebtFormatted} · Direct pocket card debt: ${hidden ? '₹ ••••••' : kpi.pocketDebtFormatted}',
+              isPositive: kpi.isTruePositive,
+              hidden: hidden,
+              onToggleHidden: cubit.toggleHideBalances,
+              pills: [
+                (label: 'Kul Dena', value: kpi.kulDenaFormatted, color: AppColors.accentRose),
+                (label: 'Kul Lena', value: kpi.kulLenaFormatted, color: AppColors.accentGreen),
+                (label: 'Bullion Basis', value: kpi.gullakAssetFormatted, color: AppColors.accentAmber),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // 6-Tile KPI Breakdown Grid
             GridView.count(
               crossAxisCount: crossCount,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: width >= 600 ? 2.05 : 1.55,
+              childAspectRatio: width >= 600 ? 2.15 : 1.55,
               children: [
                 KPITile(
                   label: 'Kul Dena (Gross)',
@@ -38,14 +57,17 @@ class OverviewTab extends StatelessWidget {
                   subtitle: 'Cards + Loans + Payables',
                   accentColor: AppColors.accentRose,
                   icon: Icons.arrow_upward_rounded,
+                  hidden: hidden,
                   onTap: () => onNavigateTab(1),
                 ),
                 KPITile(
                   label: 'Kul Lena (Receivable)',
                   value: kpi.kulLenaFormatted,
-                  subtitle: '${state.appState.recoveries.where((r) => !r.isSettled).length} active borrowers',
+                  subtitle:
+                      '${state.appState.recoveries.where((r) => !r.isSettled).length} active borrowers',
                   accentColor: AppColors.accentGreen,
                   icon: Icons.arrow_downward_rounded,
+                  hidden: hidden,
                   onTap: () => onNavigateTab(2),
                 ),
                 KPITile(
@@ -54,13 +76,15 @@ class OverviewTab extends StatelessWidget {
                   subtitle: 'Kul Dena − Kul Lena',
                   accentColor: kpi.isNetPositive ? AppColors.accentGreen : AppColors.accentAmber,
                   icon: Icons.balance_rounded,
+                  hidden: hidden,
                 ),
                 KPITile(
                   label: 'Bullion Cost Basis',
                   value: kpi.gullakAssetFormatted,
-                  subtitle: 'Pre-GST purchase basis',
+                  subtitle: 'Pre-GST acquisition basis',
                   accentColor: AppColors.accentAmber,
                   icon: Icons.workspace_premium_rounded,
+                  hidden: hidden,
                   onTap: () => onNavigateTab(3),
                 ),
                 KPITile(
@@ -69,6 +93,7 @@ class OverviewTab extends StatelessWidget {
                   subtitle: 'After bullion cost basis',
                   accentColor: kpi.isTruePositive ? AppColors.accentGreen : AppColors.accentRose,
                   icon: Icons.shield_outlined,
+                  hidden: hidden,
                 ),
                 KPITile(
                   label: 'Pocket Card Debt',
@@ -76,13 +101,14 @@ class OverviewTab extends StatelessWidget {
                   subtitle: 'Excl. SBI (${kpi.clearedCardsCount}/${kpi.totalCardsCount} cleared)',
                   accentColor: AppColors.accentBlue,
                   icon: Icons.credit_card_rounded,
+                  hidden: hidden,
                   onTap: () => onNavigateTab(1),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             const Text(
-              'Note: Bullion Cost Basis reflects pre-GST acquisition cost, not guaranteed market liquidation value.',
+              'Note: Bullion Cost Basis reflects pre-GST purchase value, not guaranteed liquidation value.',
               style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
             ),
             const SizedBox(height: 16),
@@ -90,19 +116,26 @@ class OverviewTab extends StatelessWidget {
             // Debt Freedom Engine Banner
             DhanCard(
               borderColor: AppColors.accentGreen.withValues(alpha: 0.35),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.bgCard,
+                  AppColors.greenDim.withValues(alpha: 0.35),
+                ],
+              ),
               onTap: () => onNavigateTab(1),
               child: Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
                       color: AppColors.greenDim,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: AppColors.accentGreen),
+                    child: const Icon(Icons.bolt_rounded, color: AppColors.accentGreen, size: 24),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +158,7 @@ class OverviewTab extends StatelessWidget {
                         Text(
                           plan.monthsToFreedom == 0
                               ? 'All tracked debts are cleared!'
-                              : 'Next Target: ${plan.nextTarget ?? '-'} · ${plan.monthsToFreedom} mos to freedom · Saves ${INRFormatter.formatPaise(plan.interestSavedPaise)}',
+                              : 'Next Target: ${plan.nextTarget ?? '-'} · ${plan.monthsToFreedom} mos to freedom · Saves ${hidden ? '₹ ••••' : INRFormatter.formatPaise(plan.interestSavedPaise)}',
                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
@@ -137,19 +170,27 @@ class OverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Financial Health Score Card
-            _HealthScoreCard(kpi: kpi),
+            // Responsive Side-by-Side Health Score + Chart on Wide Screens
+            if (width >= 780)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _HealthScoreCard(kpi: kpi)),
+                  const SizedBox(width: 14),
+                  Expanded(child: _LiabilityChartCard(kpi: kpi, hidden: hidden)),
+                ],
+              )
+            else ...[
+              _HealthScoreCard(kpi: kpi),
+              const SizedBox(height: 14),
+              _LiabilityChartCard(kpi: kpi, hidden: hidden),
+            ],
             const SizedBox(height: 16),
 
-            // Liability & Asset Breakdown Chart
-            _LiabilityChartCard(kpi: kpi),
-            const SizedBox(height: 16),
-
-            // Smart Alerts
             if (kpi.smartAlerts.isNotEmpty) ...[
               const SectionHeader(
                 title: 'Smart Financial Alerts',
-                subtitle: 'Real-time rules triggered by your ledger',
+                subtitle: 'Live thresholds across cards, loans, and bullion',
               ),
               const SizedBox(height: 10),
               ...kpi.smartAlerts.map((alert) {
@@ -176,11 +217,19 @@ class OverviewTab extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: DhanCard(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    borderColor: color.withValues(alpha: 0.35),
+                    borderColor: color.withValues(alpha: 0.32),
                     child: Row(
                       children: [
-                        Icon(icon, size: 18, color: color),
-                        const SizedBox(width: 10),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(icon, size: 17, color: color),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +252,6 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 8),
             ],
 
-            // Recent Activity Preview
             SectionHeader(
               title: 'Recent Activity',
               trailing: TextButton(
@@ -314,8 +362,10 @@ class _HealthScoreCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text('Financial Health Score', style: AppTextStyles.sectionTitle),
-                        const SizedBox(width: 8),
+                        const Flexible(
+                          child: Text('Financial Health Score', style: AppTextStyles.sectionTitle),
+                        ),
+                        const SizedBox(width: 6),
                         StatusChip(
                           text: hs.ratingLabel as String,
                           color: ringColor,
@@ -369,19 +419,20 @@ class _HealthScoreCard extends StatelessWidget {
 
 class _LiabilityChartCard extends StatelessWidget {
   final dynamic kpi;
-  const _LiabilityChartCard({required this.kpi});
+  final bool hidden;
+  const _LiabilityChartCard({required this.kpi, required this.hidden});
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      ('CC Debt', (kpi.totalCCOutstandingPaise as int) / 100.0, AppColors.accentRose),
-      ('Loans', (kpi.totalLoanRemainingPaise as int) / 100.0, AppColors.accentBlue),
-      ('Payables', (kpi.totalPayablesPaise as int) / 100.0, AppColors.accentPurple),
-      ('Receivable', (kpi.kulLenaPaise as int) / 100.0, AppColors.accentGreen),
-      ('Bullion', (kpi.gullakAssetPaise as int) / 100.0, AppColors.accentAmber),
+      ('CC Debt', kpi.totalCCOutstandingPaise as int, AppColors.accentRose),
+      ('Loans', kpi.totalLoanRemainingPaise as int, AppColors.accentBlue),
+      ('Payables', kpi.totalPayablesPaise as int, AppColors.accentPurple),
+      ('Receivable', kpi.kulLenaPaise as int, AppColors.accentGreen),
+      ('Bullion', kpi.gullakAssetPaise as int, AppColors.accentAmber),
     ];
 
-    final maxY = items.map((e) => e.$2).fold<double>(1000, (a, b) => a > b ? a : b) * 1.15;
+    final maxY = items.map((e) => e.$2 / 100.0).fold<double>(1000, (a, b) => a > b ? a : b) * 1.18;
 
     return DhanCard(
       child: Column(
@@ -393,13 +444,31 @@ class _LiabilityChartCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           SizedBox(
-            height: 170,
+            height: 205,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY,
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: AppColors.border.withValues(alpha: 0.6), strokeWidth: 1),
+                ),
                 borderData: FlBorderData(show: false),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => AppColors.bgCard2,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final item = items[group.x];
+                      return BarTooltipItem(
+                        '${item.$1}\n${hidden ? '₹ ••••••' : INRFormatter.formatPaise(item.$2)}',
+                        const TextStyle(
+                            color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 11),
+                      );
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -426,10 +495,10 @@ class _LiabilityChartCard extends StatelessWidget {
                     x: entry.key,
                     barRods: [
                       BarChartRodData(
-                        toY: entry.value.$2,
-                        width: 22,
+                        toY: entry.value.$2 / 100.0,
+                        width: 26,
                         color: entry.value.$3,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                       ),
                     ],
                   );

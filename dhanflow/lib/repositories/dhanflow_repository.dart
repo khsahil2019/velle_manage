@@ -620,9 +620,16 @@ class DhanflowRepository {
 
   // ── CLOUD SYNC (VERCEL PHP API) ───────────────────────────────
 
-  Future<void> pushLocalSnapshotToCloud(DhanflowAppState state) async {
+  bool get isAuthenticated => LocalStorageService.getTokens() != null;
+
+  Future<void> pushLocalSnapshotToCloud(
+    DhanflowAppState state, {
+    bool silent = true,
+  }) async {
     apiClient.updateBaseUrl(state.settings.apiBaseUrl);
-    final res = await apiClient.post(ApiConstants.backupImport, data: state.toJson());
+    final payload = state.toJson();
+    payload['silent'] = silent;
+    final res = await apiClient.post(ApiConstants.backupImport, data: payload);
     if (res.data['success'] != true) {
       throw Failure(res.data['message'] as String? ?? 'Cloud sync failed');
     }
@@ -635,9 +642,14 @@ class DhanflowRepository {
       throw Failure(res.data['message'] as String? ?? 'Cloud restore failed');
     }
     final data = res.data['data'] as Map<String, dynamic>;
+    final rawSettings = data['user_settings'] as Map<String, dynamic>?;
+    final mergedSettings = {
+      ...?rawSettings,
+      'api_base_url': current.settings.apiBaseUrl,
+    };
     final cloudState = DhanflowAppState.fromJson({
       ...data,
-      'user_settings': data['user_settings'] ?? current.settings.toJson(),
+      'user_settings': mergedSettings,
     });
     LocalStorageService.pushUndoSnapshot(current);
     LocalStorageService.saveState(cloudState);

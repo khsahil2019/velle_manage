@@ -14,6 +14,9 @@ try {
     $payables   = $request->input('personal_payables');
     $recoveries = $request->input('recoveries');
     $bullion    = $request->input('bullion_transactions');
+    $settings   = $request->input('user_settings');
+    $activity   = $request->input('activity_log');
+    $silent     = (bool)($request->input('silent') ?? false);
     $version    = (string)($request->input('schema_version') ?? '');
 
     if ($version === '' || !is_array($cards) || !is_array($bullion)) {
@@ -41,6 +44,7 @@ try {
                 'category_tag'    => (string)($c['category_tag'] ?? 'Active Pocket Debt'),
                 'display_order'   => (int)($c['display_order'] ?? $idx),
                 'is_active'       => (int)($c['is_active'] ?? 1),
+                'apr_bps'         => (int)($c['apr_bps'] ?? 3600),
                 'created_at'      => (string)($c['created_at'] ?? $now),
                 'updated_at'      => $now,
             ]);
@@ -57,6 +61,7 @@ try {
                 'total_remaining' => (int)$l['total_remaining'],
                 'note'            => (string)($l['note'] ?? ''),
                 'is_active'       => (int)($l['is_active'] ?? 1),
+                'apr_bps'         => (int)($l['apr_bps'] ?? 1600),
                 'created_at'      => (string)($l['created_at'] ?? $now),
                 'updated_at'      => $now,
             ]);
@@ -117,20 +122,51 @@ try {
             ]);
         }
 
-        $db->insert('activity_log', [
-            'user_id'     => $userId,
-            'event_type'  => 'IMPORT',
-            'description' => "Imported backup snapshot (schema v{$version})",
-            'created_at'  => $now,
-        ]);
+        if (is_array($settings)) {
+            $db->execute("DELETE FROM user_settings WHERE user_id = ?", [$userId]);
+            $db->insert('user_settings', [
+                'user_id'                   => $userId,
+                'gold_current_sell_paise'   => isset($settings['gold_current_sell_paise']) ? (int)$settings['gold_current_sell_paise'] : null,
+                'silver_current_sell_paise' => isset($settings['silver_current_sell_paise']) ? (int)$settings['silver_current_sell_paise'] : null,
+                'debt_payoff_strategy'      => (string)($settings['debt_payoff_strategy'] ?? 'snowball'),
+                'monthly_payment_capacity'  => (int)($settings['monthly_payment_capacity'] ?? 2500000),
+                'currency'                  => 'INR',
+                'updated_at'                => $now,
+            ], false);
+        }
+
+        if (is_array($activity) && $silent) {
+            $db->execute("DELETE FROM activity_log WHERE user_id = ?", [$userId]);
+            foreach (array_slice($activity, 0, 200) as $a) {
+                $db->insert('activity_log', [
+                    'id'                  => $a['id'] ?? $db->generateUUID(),
+                    'user_id'             => $userId,
+                    'event_type'          => (string)($a['event_type'] ?? 'SYSTEM'),
+                    'description'         => (string)($a['description'] ?? ''),
+                    'delta_paise'         => isset($a['delta_paise']) ? (int)$a['delta_paise'] : null,
+                    'related_entity_id'   => $a['related_entity_id'] ?? null,
+                    'related_entity_name' => $a['related_entity_name'] ?? null,
+                    'is_reversed'         => !empty($a['is_reversed']) ? 1 : 0,
+                    'created_at'          => (string)($a['created_at'] ?? $now),
+                ]);
+            }
+        } elseif (!$silent) {
+            $db->insert('activity_log', [
+                'user_id'     => $userId,
+                'event_type'  => 'IMPORT',
+                'description' => "Synced/imported backup snapshot (schema v{$version})",
+                'created_at'  => $now,
+            ]);
+        }
 
         $db->commit();
-        Response::success(['imported' => true], 'Backup imported successfully');
+        Response::success(['synced_at' => date('c')], 'Cloud storage synced');
     } catch (\Throwable $e) {
         $db->rollBack();
         throw $e;
     }
 } catch (\Throwable $e) {
+    if ($e->getCode() === 503) Response::error($e->getMessage(), 503);
     error_log('[DHANFLOW] Import error: ' . $e->getMessage());
-    Response::serverError('Import failed: ' . $e->getMessage());
+    Response::serverError('Sync failed: ' . $e->getMessage());
 }

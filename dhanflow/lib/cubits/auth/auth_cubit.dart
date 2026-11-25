@@ -1,9 +1,9 @@
-import 'package:dhanflow/core/constants/api_constants.dart';
-import 'package:dhanflow/core/network/api_client.dart';
-import 'package:dhanflow/services/local_storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../core/constants/api_constants.dart';
+import '../../core/network/api_client.dart';
+import '../../services/local_storage_service.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -17,9 +17,27 @@ class AuthOfflineGuest extends AuthState {
 
 class AuthAuthenticated extends AuthState {
   final Map<String, dynamic> user;
-  const AuthAuthenticated(this.user);
+  final String? storageDriver;
+  final bool justSignedUp;
+  final bool uploadLocalOnSignup;
+
+  const AuthAuthenticated(
+    this.user, {
+    this.storageDriver,
+    this.justSignedUp = false,
+    this.uploadLocalOnSignup = false,
+  });
+
+  String get initials {
+    final name = (user['name'] as String? ?? 'U').trim();
+    if (name.isEmpty) return 'U';
+    final parts = name.split(RegExp(r'\s+'));
+    if (parts.length == 1) return parts.first[0].toUpperCase();
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
+
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [user, storageDriver, justSignedUp, uploadLocalOnSignup];
 }
 
 class AuthLoading extends AuthState {
@@ -43,12 +61,36 @@ class AuthCubit extends Cubit<AuthState> {
     final tokens = LocalStorageService.getTokens();
     if (user != null && tokens != null) {
       emit(AuthAuthenticated(user));
+      refreshProfile();
     } else {
       emit(const AuthOfflineGuest());
     }
   }
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> refreshProfile() async {
+    if (LocalStorageService.getTokens() == null) return;
+    try {
+      final res = await apiClient.get(ApiConstants.authMe);
+      if (res.data['success'] == true) {
+        final data = res.data['data'] as Map<String, dynamic>;
+        final user = data['user'] as Map<String, dynamic>;
+        final driver = data['storage_driver'] as String?;
+        final tokens = LocalStorageService.getTokens();
+        if (tokens != null) {
+          await LocalStorageService.saveAuthSession(
+            accessToken: tokens['access_token']!,
+            refreshToken: tokens['refresh_token']!,
+            user: user,
+          );
+        }
+        emit(AuthAuthenticated(user, storageDriver: driver));
+      }
+    } catch (_) {
+      // Keep cached session if offline
+    }
+  }
+
+  Future<bool> login({required String email, required String password}) async {
     emit(const AuthLoading());
     try {
       final res = await apiClient.post(ApiConstants.login, data: {
@@ -64,21 +106,24 @@ class AuthCubit extends Cubit<AuthState> {
         user: user,
       );
       emit(AuthAuthenticated(user));
+      refreshProfile();
+      return true;
     } on DioException catch (e) {
-      final msg = (e.response?.data is Map)
-          ? (e.response?.data['message'] as String?)
-          : null;
-      emit(AuthError(msg ?? 'Login failed: check API URL & network'));
+      final msg = (e.response?.data is Map) ? (e.response?.data['message'] as String?) : null;
+      emit(AuthError(msg ?? 'Sign in failed: verify credentials and server connection'));
+      return false;
     } catch (e) {
       emit(AuthError(e.toString()));
+      return false;
     }
   }
 
-  Future<void> register({
+  Future<bool> register({
     required String name,
     required String email,
     required String password,
     bool seedInitialData = true,
+    bool uploadCurrentLocalData = false,
   }) async {
     emit(const AuthLoading());
     try {
@@ -86,7 +131,7 @@ class AuthCubit extends Cubit<AuthState> {
         'name': name.trim(),
         'email': email.trim(),
         'password': password,
-        'seed_initial_data': seedInitialData,
+        'seed_initial_data': uploadCurrentLocalData ? false : seedInitialData,
       });
       final data = res.data['data'] as Map<String, dynamic>;
       final user = data['user'] as Map<String, dynamic>;
@@ -96,19 +141,37 @@ class AuthCubit extends Cubit<AuthState> {
         refreshToken: tokens['refresh_token'] as String,
         user: user,
       );
-      emit(AuthAuthenticated(user));
+      emit(AuthAuthenticated(
+        user,
+        justSignedUp: true,
+        uploadLocalOnSignup: uploadCurrentLocalData,
+      ));
+      return true;
     } on DioException catch (e) {
-      final msg = (e.response?.data is Map)
-          ? (e.response?.data['message'] as String?)
-          : null;
+      final msg = (e.response?.data is Map) ? (e.response?.data['message'] as String?) : null;
       emit(AuthError(msg ?? 'Registration failed'));
+      return false;
     } catch (e) {
       emit(AuthError(e.toString()));
+      return false;
     }
   }
 
   Future<void> logout() async {
+    try {
+      if (LocalStorageService.getTokens() != null) {
+        await apiClient.post(ApiConstants.authLogout);
+      }
+    } catch (_) {
+      // Clear local session regardless of network state
+    }
     await LocalStorageService.clearAuthSession();
     emit(const AuthOfflineGuest());
+  }
+
+  void clearError() {
+    if (state is AuthError) {
+      emit(const AuthOfflineGuest());
+    }
   }
 }
