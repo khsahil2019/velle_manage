@@ -9,9 +9,9 @@ class Auth {
     private static string $secret;
 
     public static function init(): void {
-        $raw = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? getenv('JWT_SECRET');
-        self::$secret = is_string($raw) && trim($raw) !== ''
-            ? trim($raw)
+        $raw = Database::readEnv('JWT_SECRET');
+        self::$secret = $raw !== ''
+            ? $raw
             : 'dhanflow_dev_secret_change_in_prod';
     }
 

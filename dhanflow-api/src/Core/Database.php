@@ -46,9 +46,13 @@ class Database {
         $this->ensureSchemaInitialized();
     }
 
-    private static function readEnv(string $key): string {
-        $val = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
-        return is_string($val) ? trim($val) : '';
+    public static function readEnv(string $key): string {
+        foreach ([$_ENV[$key] ?? null, $_SERVER[$key] ?? null, getenv($key)] as $candidate) {
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return trim($candidate);
+            }
+        }
+        return '';
     }
 
     private static function firstEnv(array $keys): array {

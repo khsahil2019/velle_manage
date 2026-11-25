@@ -3,8 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/Core/bootstrap.php';
 
 $config = Database::inspectConfiguration();
-$jwtRaw = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? getenv('JWT_SECRET');
-$jwtConfigured = is_string($jwtRaw) && trim($jwtRaw) !== '';
+$jwtConfigured = Database::readEnv('JWT_SECRET') !== '';
 
 $dbConnected = false;
 $schemaReady = false;
