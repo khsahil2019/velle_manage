@@ -9,6 +9,7 @@ import '../bullion/bullion_tab.dart';
 import '../debt/debt_tab.dart';
 import '../overview/overview_tab.dart';
 import '../recoveries/recoveries_tab.dart';
+import '../../widgets/common/dhan_ui.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -68,30 +69,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
+          title: const Row(
             children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.accentGreen, AppColors.accentBlue],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(
-                  child: Text('₹',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Column(
+              TrustvlyLogo(size: 36, borderRadius: 11),
+              SizedBox(width: 10),
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('DHANFLOW',
+                  Text('Trustvly',
                       style: TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                          fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
                   Text('Debt Freedom · Wealth Clarity',
                       style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                 ],

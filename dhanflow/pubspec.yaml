@@ -1,5 +1,5 @@
 name: dhanflow
-description: "DHANFLOW — Debt Freedom. Wealth Clarity. India's personal debt & bullion tracker."
+description: "Trustvly — Debt Freedom. Wealth Clarity. India's personal debt & bullion tracker."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -45,3 +45,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/trustvly_icon_1024.png

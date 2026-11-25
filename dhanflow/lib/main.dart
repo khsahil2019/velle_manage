@@ -44,11 +44,12 @@ class DhanflowApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => AuthCubit(apiClient: apiClient)..loadSession()),
+        BlocProvider(
+            create: (_) => AuthCubit(apiClient: apiClient)..loadSession()),
         BlocProvider(create: (_) => DhanflowCubit(repository: repository)),
       ],
       child: MaterialApp(
-        title: 'DHANFLOW',
+        title: 'Trustvly',
         debugShowCheckedModeBanner: false,
         theme: _buildDarkTheme(context),
         home: const DashboardScreen(),
@@ -91,12 +92,14 @@ class DhanflowApp extends StatelessWidget {
           backgroundColor: AppColors.accentGreen,
           foregroundColor: Colors.black,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.border, thickness: 1, space: 0),
+      dividerTheme: const DividerThemeData(
+          color: AppColors.border, thickness: 1, space: 0),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.bgHover,
@@ -110,11 +113,13 @@ class DhanflowApp extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.accentGreen, width: 1.5),
+          borderSide:
+              const BorderSide(color: AppColors.accentGreen, width: 1.5),
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         hintStyle: const TextStyle(color: AppColors.textTertiary),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }

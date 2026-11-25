@@ -134,45 +134,17 @@ class _AuthScreenState extends State<AuthScreen> {
                                 onPressed: () => Navigator.of(context).pop(false),
                               ),
                             ),
-                          Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [AppColors.accentGreen, AppColors.accentBlue],
-                                ),
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accentGreen.withValues(alpha: 0.25),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '₹',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          const Center(
+                            child: TrustvlyLogo(size: 68, borderRadius: 20),
                           ),
                           const SizedBox(height: 16),
                           const Text(
-                            'DHANFLOW',
+                            'Trustvly',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
+                              letterSpacing: -0.7,
                             ),
                           ),
                           const SizedBox(height: 4),

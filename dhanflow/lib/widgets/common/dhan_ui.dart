@@ -1,6 +1,50 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
+/// Trustvly brand icon emblem backed by the 1024px high-res asset
+class TrustvlyLogo extends StatelessWidget {
+  final double size;
+  final double borderRadius;
+
+  const TrustvlyLogo({
+    super.key,
+    this.size = 36,
+    this.borderRadius = 11,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.bgPrimary,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: AppColors.accentGreen.withValues(alpha: 0.45),
+          width: size > 48 ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentGreen.withValues(alpha: 0.22),
+            blurRadius: size * 0.35,
+            offset: Offset(0, size * 0.08),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular((borderRadius - 1).clamp(0, borderRadius)),
+        child: Image.asset(
+          'assets/trustvly_icon_1024.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
 class DhanCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;

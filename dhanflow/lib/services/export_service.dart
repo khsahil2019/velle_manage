@@ -16,7 +16,7 @@ class ExportService {
   static Future<void> exportBackup(DhanflowAppState state) async {
     final jsonStr = toPrettyJson(state);
     final dateStr = DateTime.now().toIso8601String().substring(0, 10);
-    final fileName = 'dhanflow-backup-$dateStr.json';
+    final fileName = 'trustvly-backup-$dateStr.json';
 
     if (kIsWeb) {
       await Clipboard.setData(ClipboardData(text: jsonStr));
@@ -26,7 +26,8 @@ class ExportService {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileName');
     await file.writeAsString(jsonStr);
-    await Share.shareXFiles([XFile(file.path)], text: 'DHANFLOW Financial Backup ($dateStr)');
+    await Share.shareXFiles([XFile(file.path)],
+        text: 'Trustvly Financial Backup ($dateStr)');
   }
 
   static DhanflowAppState parseAndValidateJson(String rawJson) {
@@ -34,8 +35,10 @@ class ExportService {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Backup root must be a JSON object');
     }
-    if (!decoded.containsKey('credit_cards') || !decoded.containsKey('bullion_transactions')) {
-      throw const FormatException('Missing required credit_cards or bullion_transactions fields');
+    if (!decoded.containsKey('credit_cards') ||
+        !decoded.containsKey('bullion_transactions')) {
+      throw const FormatException(
+          'Missing required credit_cards or bullion_transactions fields');
     }
     return DhanflowAppState.fromJson(decoded);
   }

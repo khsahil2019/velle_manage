@@ -154,7 +154,8 @@ class SeedService {
         name: 'Sakshi',
         totalOriginalPaise: 15847236,
         totalPendingPaise: 15847236,
-        note: 'Old ₹30.5k + 6 EMIs ₹42k + Amazon 9 EMIs ₹85.9k (Covers SBI Card)',
+        note:
+            'Old ₹30.5k + 6 EMIs ₹42k + Amazon 9 EMIs ₹85.9k (Covers SBI Card)',
         isSettled: false,
         payments: const [],
         createdAt: now,
@@ -261,11 +262,12 @@ class SeedService {
         ActivityLogModel(
           id: _uuid.v4(),
           eventType: 'SYSTEM',
-          description: 'Initialized DHANFLOW with verified financial snapshot',
+          description: 'Initialized Trustvly with verified financial snapshot',
           createdAt: now,
         ),
       ],
-      settings: UserSettingsModel(apiBaseUrl: apiBaseUrl ?? ApiConstants.defaultBaseUrl),
+      settings: UserSettingsModel(
+          apiBaseUrl: apiBaseUrl ?? ApiConstants.defaultBaseUrl),
     );
   }
 }
