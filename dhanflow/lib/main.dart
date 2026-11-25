@@ -88,7 +88,7 @@ class DhanflowApp extends StatelessWidget {
         onSurface: AppColors.lightTextPrimary,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.lightBgPrimary,
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
