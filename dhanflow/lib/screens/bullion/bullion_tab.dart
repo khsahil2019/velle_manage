@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/inr_formatter.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../models/kpi_snapshot.dart';
@@ -48,7 +49,7 @@ class _BullionTabState extends State<BullionTab> {
         final showSilverWeight = _filter == 'all' || _filter == 'silver';
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
           children: [
             // ── HERO ASSET VAULT SUMMARY CARD ───────────────────────
             Container(
@@ -89,33 +90,39 @@ class _BullionTabState extends State<BullionTab> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentAmber.withValues(alpha: isDark ? 0.16 : 0.14),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppColors.accentAmber.withValues(alpha: 0.4),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentAmber.withValues(alpha: isDark ? 0.16 : 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.accentAmber.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.diamond_outlined, size: 12, color: AppColors.accentAmber),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  context.tr('ast_badge'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: AppColors.accentAmber,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.diamond_outlined, size: 12, color: AppColors.accentAmber),
-                            SizedBox(width: 5),
-                            Text(
-                              'MY WEALTH VAULT',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: AppColors.accentAmber,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentAmber,
@@ -127,13 +134,14 @@ class _BullionTabState extends State<BullionTab> {
                         ),
                         onPressed: () => _showAddAssetSheet(context),
                         icon: const Icon(Icons.add_rounded, size: 17),
-                        label: const Text('Add Asset', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                        label: Text(context.tr('ast_add'),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'Total Tracked Assets Valuation',
+                    context.tr('ast_total'),
                     style: TextStyle(
                       fontSize: 12,
                       color: context.textSecondary,
@@ -157,7 +165,7 @@ class _BullionTabState extends State<BullionTab> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Gold, Silver, Diamonds, Property & everything you own',
+                    context.tr('ast_sub'),
                     style: TextStyle(fontSize: 11, color: context.textTertiary),
                   ),
                   const SizedBox(height: 16),
@@ -246,10 +254,8 @@ class _BullionTabState extends State<BullionTab> {
 
             // ── DIAMONDS, JEWELRY & PERSONAL ITEMS SECTION ──────────
             SectionHeader(
-              title: 'Diamonds, Jewelry & Personal Items',
-              subtitle: customAssets.isEmpty
-                  ? 'Add diamonds, property, stocks, cash, watches, gadgets or any asset'
-                  : 'Tap any asset card to update valuation or manage',
+              title: context.tr('ast_items_title'),
+              subtitle: context.tr('ast_items_sub'),
               trailing: TextButton.icon(
                 onPressed: () => _showAddAssetSheet(context, initialTab: 0),
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 15, color: Color(0xFF06B6D4)),
@@ -386,8 +392,8 @@ class _BullionTabState extends State<BullionTab> {
             if (showGoldWeight || showSilverWeight) ...[
               const SizedBox(height: 20),
               SectionHeader(
-                title: 'Precious Metals Weight Holdings',
-                subtitle: 'Gram-exact Gold 24K & Silver cost basis + live rate simulator',
+                title: context.tr('ast_metals_title'),
+                subtitle: context.tr('ast_metals_sub'),
                 trailing: TextButton.icon(
                   onPressed: () => _showAddAssetSheet(context, initialTab: 1),
                   icon: const Icon(Icons.scale_rounded, size: 15, color: AppColors.accentAmber),

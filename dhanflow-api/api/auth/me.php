@@ -21,8 +21,9 @@ try {
     $counts = [
         'credit_cards' => (int)$db->execute("SELECT COUNT(*) FROM credit_cards WHERE user_id = ? AND is_active = 1", [$userId])->fetchColumn(),
         'loans'        => (int)$db->execute("SELECT COUNT(*) FROM loans WHERE user_id = ? AND is_active = 1", [$userId])->fetchColumn(),
-        'recoveries'   => (int)$db->execute("SELECT COUNT(*) FROM recoveries WHERE user_id = ?", [$userId])->fetchColumn(),
-        'bullion'      => (int)$db->execute("SELECT COUNT(*) FROM bullion_transactions WHERE user_id = ?", [$userId])->fetchColumn(),
+        'recoveries'      => (int)$db->execute("SELECT COUNT(*) FROM recoveries WHERE user_id = ?", [$userId])->fetchColumn(),
+        'bullion'         => (int)$db->execute("SELECT COUNT(*) FROM bullion_transactions WHERE user_id = ?", [$userId])->fetchColumn(),
+        'personal_assets' => (int)$db->execute("SELECT COUNT(*) FROM personal_assets WHERE user_id = ?", [$userId])->fetchColumn(),
     ];
 
     Response::success([

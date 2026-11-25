@@ -27,6 +27,7 @@ class SeedService
             $this->db->execute("DELETE FROM personal_payables WHERE user_id = ?", [$userId]);
             $this->db->execute("DELETE FROM recoveries WHERE user_id = ?", [$userId]);
             $this->db->execute("DELETE FROM bullion_transactions WHERE user_id = ?", [$userId]);
+            $this->db->execute("DELETE FROM personal_assets WHERE user_id = ?", [$userId]);
             if ($clearActivity) {
                 $this->db->execute("DELETE FROM activity_log WHERE user_id = ?", [$userId]);
             }
@@ -119,7 +120,7 @@ class SeedService
                     'gst_paise' => $gst,
                     'total_paid_paise' => $paid,
                     'purchase_date' => $date,
-                    'platform' => 'Gullak',
+                    'platform' => 'Vault',
                     'created_at' => $now,
                 ]);
             }

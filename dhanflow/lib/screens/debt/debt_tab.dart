@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/inr_formatter.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../models/models.dart';
@@ -36,17 +37,17 @@ class _DebtTabState extends State<DebtTab> {
                 child: Row(
                   children: [
                     _SegmentButton(
-                      label: 'Cards (${state.appState.creditCards.length})',
+                      label: '${context.tr('debt_cards')} (${state.appState.creditCards.length})',
                       selected: _segment == 0,
                       onTap: () => setState(() => _segment = 0),
                     ),
                     _SegmentButton(
-                      label: 'Loans & Payables',
+                      label: context.tr('debt_loans_payables'),
                       selected: _segment == 1,
                       onTap: () => setState(() => _segment = 1),
                     ),
                     _SegmentButton(
-                      label: 'Payoff Engine',
+                      label: context.tr('debt_payoff_plan'),
                       selected: _segment == 2,
                       onTap: () => setState(() => _segment = 2),
                     ),
@@ -138,7 +139,7 @@ class _CreditCardsView extends StatelessWidget {
     final isWide = MediaQuery.of(context).size.width >= 760;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
       children: [
         // CRED-style Credit Cards Portfolio Command Strip
         DhanCard(
@@ -155,13 +156,12 @@ class _CreditCardsView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SectionHeader(
-                title: 'Credit Cards Wallet',
-                subtitle:
-                    '${kpi.clearedCardsCount}/${kpi.totalCardsCount} cleared · Tap any card to update balances',
+                title: context.tr('debt_wallet'),
+                subtitle: context.tr('debt_tap_hint'),
                 trailing: ElevatedButton.icon(
                   onPressed: () => _showAddCardSheet(context),
                   icon: const Icon(Icons.add_card_rounded, size: 16),
-                  label: const Text('Add Card'),
+                  label: Text(context.tr('debt_add_card')),
                 ),
               ),
               const SizedBox(height: 14),
@@ -169,7 +169,7 @@ class _CreditCardsView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatCol(
-                      'TOTAL CARD DUE',
+                      context.tr('debt_total_due'),
                       hidden ? '₹ ••••••' : INRFormatter.formatPaise(kpi.totalCCOutstandingPaise),
                       AppColors.accentRose,
                     ),
@@ -177,7 +177,7 @@ class _CreditCardsView extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _StatCol(
-                      'AVAILABLE LIMIT',
+                      context.tr('debt_avl_limit'),
                       hidden
                           ? '₹ ••••••'
                           : INRFormatter.formatPaise(
@@ -190,7 +190,7 @@ class _CreditCardsView extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _StatCol(
-                      'UTILIZATION',
+                      context.tr('debt_used'),
                       INRFormatter.formatPct(kpi.overallUtilizationPct),
                       AppColors.utilizationColor(kpi.overallUtilizationPct),
                     ),
@@ -208,7 +208,7 @@ class _CreditCardsView extends StatelessWidget {
           runSpacing: 6,
           children: [
             ChoiceChip(
-              label: Text('All (${allCards.length})'),
+              label: Text('${context.tr('debt_filter_all')} (${allCards.length})'),
               selected: filter == 0,
               selectedColor: AppColors.accentGreen,
               labelStyle: TextStyle(
@@ -219,7 +219,7 @@ class _CreditCardsView extends StatelessWidget {
               onSelected: (_) => onFilterChanged(0),
             ),
             ChoiceChip(
-              label: Text('Active (${kpi.activeCardsCount})'),
+              label: Text('${context.tr('debt_filter_active')} (${kpi.activeCardsCount})'),
               selected: filter == 1,
               selectedColor: AppColors.accentAmber,
               labelStyle: TextStyle(
@@ -230,7 +230,7 @@ class _CreditCardsView extends StatelessWidget {
               onSelected: (_) => onFilterChanged(1),
             ),
             ChoiceChip(
-              label: Text('Cleared (${kpi.clearedCardsCount})'),
+              label: Text('${context.tr('debt_filter_cleared')} (${kpi.clearedCardsCount})'),
               selected: filter == 2,
               selectedColor: AppColors.accentGreen,
               labelStyle: TextStyle(
@@ -888,7 +888,7 @@ class _LoansPayablesView extends StatelessWidget {
     final hidden = state.hideBalances;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
       children: [
         SectionHeader(
           title: 'EMI Loans',
@@ -1259,7 +1259,7 @@ class _DebtFreedomEngineView extends StatelessWidget {
         (state.appState.settings.monthlyPaymentCapacityPaise / 100.0).clamp(5000.0, 150000.0);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
       children: [
         DhanCard(
           borderColor: AppColors.accentGreen.withValues(alpha: 0.35),

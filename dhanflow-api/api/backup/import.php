@@ -48,7 +48,7 @@ try {
                 'display_order' => (int) ($c['display_order'] ?? $idx),
                 'is_active' => (int) ($c['is_active'] ?? 1),
                 'apr_bps' => (int) ($c['apr_bps'] ?? 3600),
-                'created_at' => (string) ($c['created_at'] ?? $now),
+                'created_at' => $db->normalizeDateTime($c['created_at'] ?? null),
                 'updated_at' => $now,
             ]);
         }
@@ -65,7 +65,7 @@ try {
                 'note' => (string) ($l['note'] ?? ''),
                 'is_active' => (int) ($l['is_active'] ?? 1),
                 'apr_bps' => (int) ($l['apr_bps'] ?? 1600),
-                'created_at' => (string) ($l['created_at'] ?? $now),
+                'created_at' => $db->normalizeDateTime($l['created_at'] ?? null),
                 'updated_at' => $now,
             ]);
         }
@@ -78,7 +78,7 @@ try {
                 'amount' => (int) $p['amount'],
                 'note' => (string) ($p['note'] ?? ''),
                 'is_settled' => (int) ($p['is_settled'] ?? 0),
-                'created_at' => (string) ($p['created_at'] ?? $now),
+                'created_at' => $db->normalizeDateTime($p['created_at'] ?? null),
                 'updated_at' => $now,
             ]);
         }
@@ -92,7 +92,7 @@ try {
                 'total_pending' => (int) $r['total_pending'],
                 'note' => (string) ($r['note'] ?? ''),
                 'is_settled' => (int) ($r['is_settled'] ?? 0),
-                'created_at' => (string) ($r['created_at'] ?? $now),
+                'created_at' => $db->normalizeDateTime($r['created_at'] ?? null),
                 'updated_at' => $now,
             ]);
             foreach ((array) ($r['payments'] ?? []) as $pay) {
@@ -103,8 +103,8 @@ try {
                     'amount' => (int) $pay['amount'],
                     'applied_to_card' => $pay['applied_to_card'] ?? null,
                     'note' => (string) ($pay['note'] ?? ''),
-                    'payment_date' => (string) ($pay['payment_date'] ?? $now),
-                    'created_at' => (string) ($pay['created_at'] ?? $now),
+                    'payment_date' => $db->normalizeDateTime($pay['payment_date'] ?? null),
+                    'created_at' => $db->normalizeDateTime($pay['created_at'] ?? null),
                 ]);
             }
         }
@@ -119,9 +119,9 @@ try {
                 'pre_gst_paise' => (int) $b['pre_gst_paise'],
                 'gst_paise' => (int) $b['gst_paise'],
                 'total_paid_paise' => (int) $b['total_paid_paise'],
-                'purchase_date' => (string) $b['purchase_date'],
+                'purchase_date' => $db->normalizeDateTime($b['purchase_date'] ?? null),
                 'platform' => (string) ($b['platform'] ?? 'Vault'),
-                'created_at' => (string) ($b['created_at'] ?? $now),
+                'created_at' => $db->normalizeDateTime($b['created_at'] ?? null),
             ]);
         }
 
@@ -135,8 +135,8 @@ try {
                 'purchase_value_paise' => (int) ($pa['purchase_value_paise'] ?? 0),
                 'current_value_paise' => (int) ($pa['current_value_paise'] ?? 0),
                 'note' => (string) ($pa['note'] ?? ''),
-                'acquired_date' => (string) ($pa['acquired_date'] ?? $now),
-                'created_at' => (string) ($pa['created_at'] ?? $now),
+                'acquired_date' => $db->normalizeDateTime($pa['acquired_date'] ?? null),
+                'created_at' => $db->normalizeDateTime($pa['created_at'] ?? null),
             ]);
         }
 
@@ -165,7 +165,7 @@ try {
                     'related_entity_id' => $a['related_entity_id'] ?? null,
                     'related_entity_name' => $a['related_entity_name'] ?? null,
                     'is_reversed' => !empty($a['is_reversed']) ? 1 : 0,
-                    'created_at' => (string) ($a['created_at'] ?? $now),
+                    'created_at' => $db->normalizeDateTime($a['created_at'] ?? null),
                 ]);
             }
         } elseif (!$silent) {

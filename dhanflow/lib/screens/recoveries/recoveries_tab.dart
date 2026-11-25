@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/utils/inr_formatter.dart';
 import '../../cubits/dhanflow_cubit.dart';
 import '../../models/models.dart';
@@ -37,7 +38,7 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
         final overallPct = totalOrig > 0 ? ((totalRecovered / totalOrig) * 100.0).clamp(0.0, 100.0) : 0.0;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
           children: [
             // ── HERO KUL LENA RECEIVABLES CONSOLE ───────────────────
             Container(
@@ -78,48 +79,54 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentGreen.withValues(alpha: isDark ? 0.16 : 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.handshake_outlined, size: 12, color: AppColors.accentGreen),
-                            SizedBox(width: 5),
-                            Text(
-                              'KUL LENA · RECEIVABLES',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: AppColors.accentGreen,
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentGreen.withValues(alpha: isDark ? 0.16 : 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.handshake_outlined, size: 12, color: AppColors.accentGreen),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  context.tr('rec_badge'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                    color: AppColors.accentGreen,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentGreen,
                           foregroundColor: isDark ? Colors.black : Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => _showAddBorrowerSheet(context),
                         icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
-                        label: const Text('Add Person',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                        label: Text(context.tr('rec_add_person'),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'Total Pending Receivable',
+                    context.tr('rec_total_pending'),
                     style: TextStyle(
                       fontSize: 12,
                       color: context.textSecondary,
@@ -145,16 +152,21 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Overall Collection Progress',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.textSecondary,
+                      Flexible(
+                        child: Text(
+                          context.tr('rec_progress'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: context.textSecondary,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
-                        '${overallPct.toStringAsFixed(1)}% recovered (${hidden ? '₹ ••••' : INRFormatter.formatPaise(totalRecovered)})',
+                        '${overallPct.toStringAsFixed(1)}% (${hidden ? '₹ ••••' : INRFormatter.formatPaise(totalRecovered)})',
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -174,23 +186,23 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
                     children: [
                       Expanded(
                         child: _HeroWell(
-                          label: 'Active',
-                          value: '${activeList.length} people',
+                          label: context.tr('rec_active'),
+                          value: '${activeList.length}',
                           color: AppColors.accentAmber,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _HeroWell(
-                          label: 'Settled',
-                          value: '${settledList.length} cleared',
+                          label: context.tr('rec_settled'),
+                          value: '${settledList.length}',
                           color: AppColors.accentGreen,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _HeroWell(
-                          label: 'Recovered',
+                          label: context.tr('rec_recovered'),
                           value: hidden ? '₹ ••••' : INRFormatter.formatPaise(totalRecovered),
                           color: AppColors.accentBlue,
                         ),
@@ -213,7 +225,7 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Receivables stay separate from Credit Cards until you apply a received recovery to a card.',
+                      context.tr('rec_info'),
                       style: TextStyle(fontSize: 11, color: context.textSecondary),
                     ),
                   ),
@@ -223,23 +235,23 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
             const SizedBox(height: 14),
 
             // ── FILTER CHIPS ────────────────────────────────────────
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
               children: [
                 _FilterPill(
-                  label: 'All (${recoveries.length})',
+                  label: '${context.tr('rec_filter_all')} (${recoveries.length})',
                   selected: _filter == 'all',
                   onTap: () => setState(() => _filter = 'all'),
                 ),
-                const SizedBox(width: 8),
                 _FilterPill(
-                  label: 'Pending (${activeList.length})',
+                  label: '${context.tr('rec_filter_active')} (${activeList.length})',
                   selected: _filter == 'active',
                   accent: AppColors.accentAmber,
                   onTap: () => setState(() => _filter = 'active'),
                 ),
-                const SizedBox(width: 8),
                 _FilterPill(
-                  label: 'Settled (${settledList.length})',
+                  label: '${context.tr('rec_filter_settled')} (${settledList.length})',
                   selected: _filter == 'settled',
                   accent: AppColors.accentGreen,
                   onTap: () => setState(() => _filter = 'settled'),
@@ -379,18 +391,18 @@ class _RecoveriesTabState extends State<RecoveriesTab> {
                                 onPressed: () => _showRecordRecoverySheet(
                                     context, rec, state.appState.creditCards),
                                 icon: const Icon(Icons.bolt_rounded, size: 16),
-                                label: const Text('Record Payment Received'),
+                                label: Text(context.tr('rec_got_payment')),
                               )
                             else
                               StatusChip(
-                                text: '✓ SETTLED',
+                                text: '✓ ${context.tr('rec_settled').toUpperCase()}',
                                 color: AppColors.accentGreen,
                                 bgColor: context.greenDim,
                               ),
                             OutlinedButton.icon(
                               onPressed: () => _showAddAdvanceSheet(context, rec),
                               icon: const Icon(Icons.add_rounded, size: 15),
-                              label: const Text('Lend More'),
+                              label: Text(context.tr('rec_lend_more')),
                             ),
                             PopupMenuButton<String>(
                               tooltip: 'More options',

@@ -65,7 +65,7 @@ class _ActivityTabState extends State<ActivityTab> {
         }).toList();
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
           children: [
             // ── HEADER BANNER ───────────────────────────────────────
             DhanCard(

@@ -205,6 +205,17 @@ class Database {
         return date('Y-m-d H:i:s');
     }
 
+    public function normalizeDateTime(?string $iso): string {
+        if ($iso === null || trim($iso) === '') {
+            return $this->now();
+        }
+        $ts = strtotime($iso);
+        if ($ts === false) {
+            return $this->now();
+        }
+        return date('Y-m-d H:i:s', $ts);
+    }
+
     public function execute(string $sql, array $params = []): \PDOStatement {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -276,11 +287,20 @@ class Database {
      * Auto-initializes core tables if missing (zero-friction Vercel + Postgres/MySQL/SQLite setup).
      */
     private function ensureSchemaInitialized(): void {
+        $usersReady = false;
+        $assetsReady = false;
         try {
             $this->pdo->query("SELECT 1 FROM users LIMIT 1");
-            return;
+            $usersReady = true;
         } catch (\Throwable) {
-            // Table does not exist yet — create schema
+        }
+        try {
+            $this->pdo->query("SELECT 1 FROM personal_assets LIMIT 1");
+            $assetsReady = true;
+        } catch (\Throwable) {
+        }
+        if ($usersReady && $assetsReady) {
+            return;
         }
 
         $textType = $this->driver === 'mysql' ? 'TEXT' : 'TEXT';
@@ -418,6 +438,23 @@ class Database {
 
         foreach ($stmts as $sql) {
             $this->pdo->exec($sql);
+        }
+
+        // Create helpful indexes safely across PostgreSQL & SQLite (ignore on MySQL variants without IF NOT EXISTS)
+        $indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_cards_user ON credit_cards (user_id, display_order)",
+            "CREATE INDEX IF NOT EXISTS idx_loans_user ON loans (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_payables_user ON personal_payables (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_recoveries_user ON recoveries (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_bullion_user ON bullion_transactions (user_id, purchase_date)",
+            "CREATE INDEX IF NOT EXISTS idx_assets_user ON personal_assets (user_id, acquired_date)",
+            "CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_log (user_id, created_at)",
+        ];
+        foreach ($indexes as $idxSql) {
+            try {
+                $this->pdo->exec($idxSql);
+            } catch (\Throwable) {
+            }
         }
     }
 }
