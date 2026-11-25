@@ -15,6 +15,7 @@ try {
     $payables = $request->input('personal_payables');
     $recoveries = $request->input('recoveries');
     $bullion = $request->input('bullion_transactions');
+    $personalAssets = $request->input('personal_assets');
     $settings = $request->input('user_settings');
     $activity = $request->input('activity_log');
     $silent = (bool) ($request->input('silent') ?? false);
@@ -34,6 +35,7 @@ try {
         $db->execute("DELETE FROM personal_payables WHERE user_id = ?", [$userId]);
         $db->execute("DELETE FROM recoveries WHERE user_id = ?", [$userId]);
         $db->execute("DELETE FROM bullion_transactions WHERE user_id = ?", [$userId]);
+        $db->execute("DELETE FROM personal_assets WHERE user_id = ?", [$userId]);
 
         foreach ($cards as $idx => $c) {
             $db->insert('credit_cards', [
@@ -118,8 +120,23 @@ try {
                 'gst_paise' => (int) $b['gst_paise'],
                 'total_paid_paise' => (int) $b['total_paid_paise'],
                 'purchase_date' => (string) $b['purchase_date'],
-                'platform' => (string) ($b['platform'] ?? 'Gullak'),
+                'platform' => (string) ($b['platform'] ?? 'Vault'),
                 'created_at' => (string) ($b['created_at'] ?? $now),
+            ]);
+        }
+
+        foreach ((array) $personalAssets as $pa) {
+            $db->insert('personal_assets', [
+                'id' => $pa['id'] ?? $db->generateUUID(),
+                'user_id' => $userId,
+                'title' => (string) ($pa['title'] ?? 'Asset'),
+                'category' => (string) ($pa['category'] ?? 'other'),
+                'quantity_label' => (string) ($pa['quantity_label'] ?? '1 Unit'),
+                'purchase_value_paise' => (int) ($pa['purchase_value_paise'] ?? 0),
+                'current_value_paise' => (int) ($pa['current_value_paise'] ?? 0),
+                'note' => (string) ($pa['note'] ?? ''),
+                'acquired_date' => (string) ($pa['acquired_date'] ?? $now),
+                'created_at' => (string) ($pa['created_at'] ?? $now),
             ]);
         }
 

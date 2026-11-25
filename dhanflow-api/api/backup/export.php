@@ -12,6 +12,7 @@ try {
     $recoveries = $db->execute("SELECT * FROM recoveries WHERE user_id = ? ORDER BY is_settled ASC, total_pending DESC", [$userId])->fetchAll();
     $payments   = $db->execute("SELECT * FROM recovery_payments WHERE user_id = ? ORDER BY payment_date DESC", [$userId])->fetchAll();
     $bullion    = $db->execute("SELECT * FROM bullion_transactions WHERE user_id = ? ORDER BY purchase_date DESC", [$userId])->fetchAll();
+    $assets     = $db->execute("SELECT * FROM personal_assets WHERE user_id = ? ORDER BY acquired_date DESC", [$userId])->fetchAll();
     $settings   = $db->execute("SELECT * FROM user_settings WHERE user_id = ?", [$userId])->fetch() ?: null;
     $activity   = $db->execute("SELECT * FROM activity_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 200", [$userId])->fetchAll();
 
@@ -40,6 +41,7 @@ try {
         'personal_payables'    => $payables,
         'recoveries'           => $recoveries,
         'bullion_transactions' => $bullion,
+        'personal_assets'      => $assets,
         'user_settings'        => $settings,
         'activity_log'         => $activity,
     ];

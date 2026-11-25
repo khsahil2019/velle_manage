@@ -126,17 +126,33 @@ CREATE TABLE IF NOT EXISTS recovery_payments (
 CREATE TABLE IF NOT EXISTS bullion_transactions (
   id               CHAR(36)     NOT NULL PRIMARY KEY,
   user_id          CHAR(36)     NOT NULL,
-  metal            ENUM('gold','silver') NOT NULL,
+  metal            VARCHAR(32)  NOT NULL,
   grams_x10000     BIGINT       NOT NULL COMMENT 'Grams × 10000 (4 decimal precision)',
   buy_rate_paise   BIGINT       NOT NULL COMMENT 'Pre-GST rate per gram, in paise',
   pre_gst_paise    BIGINT       NOT NULL COMMENT 'grams × rate, in paise',
   gst_paise        BIGINT       NOT NULL COMMENT '3% of pre_gst, in paise',
   total_paid_paise BIGINT       NOT NULL COMMENT 'pre_gst + gst, in paise',
   purchase_date    DATETIME     NOT NULL,
-  platform         VARCHAR(50)  NOT NULL DEFAULT 'Gullak',
+  platform         VARCHAR(50)  NOT NULL DEFAULT 'Vault',
   created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_bullion_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_user_metal_date (user_id, metal, purchase_date DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── PERSONAL ASSETS VAULT ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS personal_assets (
+  id                   CHAR(36)     NOT NULL PRIMARY KEY,
+  user_id              CHAR(36)     NOT NULL,
+  title                VARCHAR(120) NOT NULL,
+  category             VARCHAR(32)  NOT NULL DEFAULT 'other',
+  quantity_label       VARCHAR(80)  NOT NULL DEFAULT '1 Unit',
+  purchase_value_paise BIGINT       NOT NULL DEFAULT 0,
+  current_value_paise  BIGINT       NOT NULL DEFAULT 0,
+  note                 VARCHAR(255) DEFAULT NULL,
+  acquired_date        DATETIME     NOT NULL,
+  created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_assets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_assets_user_cat (user_id, category, acquired_date DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── USER SETTINGS ───────────────────────────────────────────────

@@ -22,27 +22,68 @@ class OverviewTab extends StatelessWidget {
         final width = MediaQuery.of(context).size.width;
         final crossCount = width >= 920 ? 3 : 2;
 
+        final grossDebt = kpi.kulDenaPaise;
+        final grossAssets = kpi.kulLenaPaise + kpi.gullakAssetPaise;
+        final coveragePct = grossDebt > 0
+            ? ((grossAssets / grossDebt) * 100).clamp(0.0, 100.0)
+            : 100.0;
+
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
-            // Hero Financial Command Card
-            HeroCommandCard(
-              title: 'True Net Liability (After Bullion Cost Basis)',
-              mainValue: kpi.trueNetFormatted,
-              subtitle:
-                  'Net before bullion: ${hidden ? '₹ ••••••' : kpi.asalNetDebtFormatted} · Direct pocket card debt: ${hidden ? '₹ ••••••' : kpi.pocketDebtFormatted}',
-              isPositive: kpi.isTruePositive,
+            // ── HERO FINANCIAL RADAR COMMAND CONSOLE ──────────────────
+            _HeroRadarConsole(
+              kpi: kpi,
               hidden: hidden,
+              coveragePct: coveragePct,
               onToggleHidden: cubit.toggleHideBalances,
-              pills: [
-                (label: 'Kul Dena', value: kpi.kulDenaFormatted, color: AppColors.accentRose),
-                (label: 'Kul Lena', value: kpi.kulLenaFormatted, color: AppColors.accentGreen),
-                (label: 'Bullion Basis', value: kpi.gullakAssetFormatted, color: AppColors.accentAmber),
+              onNavigateTab: onNavigateTab,
+            ),
+            const SizedBox(height: 16),
+
+            // ── QUICK ACTION LAUNCHPAD ──────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.flash_on_rounded,
+                    label: 'Pay Due',
+                    color: AppColors.accentGreen,
+                    onTap: () => onNavigateTab(1),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.add_circle_outline_rounded,
+                    label: 'Add Spend',
+                    color: AppColors.accentRose,
+                    onTap: () => onNavigateTab(1),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.handshake_outlined,
+                    label: 'Kul Lena',
+                    color: AppColors.accentBlue,
+                    onTap: () => onNavigateTab(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.workspace_premium_rounded,
+                    label: 'Buy Gold',
+                    color: AppColors.accentAmber,
+                    onTap: () => onNavigateTab(3),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
 
-            // 6-Tile KPI Breakdown Grid (intrinsic row height prevents RenderFlex overflow)
+            // ── 6-TILE BENTO METRIC GRID ────────────────────────────
             Builder(builder: (context) {
               final tiles = [
                 KPITile(
@@ -82,7 +123,7 @@ class OverviewTab extends StatelessWidget {
                   onTap: () => onNavigateTab(3),
                 ),
                 KPITile(
-                  label: 'True Net Liability',
+                  label: 'True Net Position',
                   value: kpi.trueNetFormatted,
                   subtitle: 'After bullion cost basis',
                   accentColor: kpi.isTruePositive ? AppColors.accentGreen : AppColors.accentRose,
@@ -116,34 +157,39 @@ class OverviewTab extends StatelessWidget {
               }
               return Column(children: rows);
             }),
-            const SizedBox(height: 8),
-            const Text(
-              'Note: Bullion Cost Basis reflects pre-GST purchase value, not guaranteed liquidation value.',
-              style: TextStyle(fontSize: 10, color: AppColors.textTertiary),
+            const SizedBox(height: 6),
+            Text(
+              'Note: Bullion Cost Basis reflects pre-GST acquisition value, protecting conservative asset reserves.',
+              style: TextStyle(fontSize: 10, color: context.textTertiary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Debt Freedom Engine Banner
+            // ── DEBT FREEDOM ENGINE STRATEGY BANNER ─────────────────
             DhanCard(
               borderColor: AppColors.accentGreen.withValues(alpha: 0.35),
               gradient: LinearGradient(
-                colors: [
-                  AppColors.bgCard,
-                  AppColors.greenDim.withValues(alpha: 0.35),
-                ],
+                colors: context.isDark
+                    ? [
+                        AppColors.bgCard,
+                        AppColors.greenDim.withValues(alpha: 0.45),
+                      ]
+                    : [
+                        Colors.white,
+                        const Color(0xFFECFDF5),
+                      ],
               ),
               onTap: () => onNavigateTab(1),
               child: Row(
                 children: [
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.greenDim,
+                      color: context.greenDim,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+                      border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.4)),
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: AppColors.accentGreen, size: 24),
+                    child: const Icon(Icons.bolt_rounded, color: AppColors.accentGreen, size: 26),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -155,34 +201,38 @@ class OverviewTab extends StatelessWidget {
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               'Debt Freedom Engine',
-                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                                color: context.textPrimary,
+                              ),
                             ),
                             StatusChip(
                               text: plan.strategy.toUpperCase(),
                               color: AppColors.accentGreen,
-                              bgColor: AppColors.greenDim,
+                              bgColor: context.greenDim,
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           plan.monthsToFreedom == 0
-                              ? 'All tracked debts are cleared!'
-                              : 'Next Target: ${plan.nextTarget ?? '-'} · ${plan.monthsToFreedom} mos to freedom · Saves ${hidden ? '₹ ••••' : INRFormatter.formatPaise(plan.interestSavedPaise)}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              ? 'All tracked debts are completely cleared! You are financially free.'
+                              : 'Next Target: ${plan.nextTarget ?? '-'} · ${plan.monthsToFreedom} mos to freedom · Saves ${hidden ? '₹ ••••' : INRFormatter.formatPaise(plan.interestSavedPaise)} interest',
+                          style: TextStyle(fontSize: 12, color: context.textSecondary),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+                  Icon(Icons.chevron_right_rounded, color: context.textTertiary),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Responsive Side-by-Side Health Score + Chart on Wide Screens
+            // ── HEALTH SCORE + LIABILITY CHART (RESPONSIVE) ──────────
             if (width >= 780)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,12 +247,13 @@ class OverviewTab extends StatelessWidget {
               const SizedBox(height: 14),
               _LiabilityChartCard(kpi: kpi, hidden: hidden),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
+            // ── SMART FINANCIAL ALERTS ───────────────────────────────
             if (kpi.smartAlerts.isNotEmpty) ...[
               const SectionHeader(
-                title: 'Smart Financial Alerts',
-                subtitle: 'Live thresholds across cards, loans, and bullion',
+                title: 'Smart Financial Radar',
+                subtitle: 'Automated warnings & milestones across your portfolio',
               ),
               const SizedBox(height: 10),
               ...kpi.smartAlerts.map((alert) {
@@ -233,26 +284,32 @@ class OverviewTab extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 32,
-                          height: 32,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.14),
+                            color: color.withValues(alpha: context.isDark ? 0.16 : 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(icon, size: 17, color: color),
+                          child: Icon(icon, size: 18, color: color),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(alert.title,
-                                  style: TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+                              Text(
+                                alert.title,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: color,
+                                ),
+                              ),
                               const SizedBox(height: 2),
-                              Text(alert.message,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: AppColors.textSecondary)),
+                              Text(
+                                alert.message,
+                                style: TextStyle(fontSize: 11, color: context.textSecondary),
+                              ),
                             ],
                           ),
                         ),
@@ -261,41 +318,61 @@ class OverviewTab extends StatelessWidget {
                   ),
                 );
               }),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
             ],
 
+            // ── RECENT ACTIVITY FEED ────────────────────────────────
             SectionHeader(
-              title: 'Recent Activity',
-              trailing: TextButton(
+              title: 'Recent Activity Stream',
+              subtitle: 'Latest ledger operations, payments & recoveries',
+              trailing: TextButton.icon(
                 onPressed: () => onNavigateTab(4),
-                child: const Text('See All', style: TextStyle(color: AppColors.accentGreen)),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.accentGreen),
+                label: const Text('See All', style: TextStyle(color: AppColors.accentGreen, fontWeight: FontWeight.w700, fontSize: 12)),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             DhanCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: state.appState.activityLog.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No recent activity', style: AppTextStyles.body),
+                  ? Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Center(
+                        child: Text(
+                          'No recent activity recorded yet.',
+                          style: TextStyle(fontSize: 12, color: context.textTertiary),
+                        ),
+                      ),
                     )
                   : Column(
-                      children: state.appState.activityLog.take(4).map((e) {
+                      children: state.appState.activityLog.take(5).map((e) {
+                        final isCredit = e.eventType.contains('PAYMENT') || e.eventType.contains('RECOVERY');
+                        final isSpend = e.eventType.contains('SPEND');
+                        final dotColor = isCredit
+                            ? AppColors.accentGreen
+                            : isSpend
+                                ? AppColors.accentRose
+                                : AppColors.accentAmber;
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             children: [
                               Container(
-                                width: 8,
-                                height: 8,
+                                width: 28,
+                                height: 28,
                                 decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: e.eventType.contains('PAYMENT') ||
-                                          e.eventType.contains('RECOVERY')
-                                      ? AppColors.accentGreen
-                                      : e.eventType.contains('SPEND')
-                                          ? AppColors.accentRose
-                                          : AppColors.accentAmber,
+                                  color: dotColor.withValues(alpha: context.isDark ? 0.16 : 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  isCredit
+                                      ? Icons.south_west_rounded
+                                      : isSpend
+                                          ? Icons.north_east_rounded
+                                          : Icons.sync_alt_rounded,
+                                  color: dotColor,
+                                  size: 14,
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -304,14 +381,17 @@ class OverviewTab extends StatelessWidget {
                                   e.description,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: AppColors.textSecondary),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: context.textPrimary,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 INRFormatter.timeAgo(e.createdAt),
-                                style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                                style: TextStyle(fontSize: 10, color: context.textTertiary),
                               ),
                             ],
                           ),
@@ -326,6 +406,348 @@ class OverviewTab extends StatelessWidget {
   }
 }
 
+// ── HERO RADAR CONSOLE WIDGET ──────────────────────────────────────────
+class _HeroRadarConsole extends StatelessWidget {
+  final dynamic kpi;
+  final bool hidden;
+  final double coveragePct;
+  final VoidCallback onToggleHidden;
+  final ValueChanged<int> onNavigateTab;
+
+  const _HeroRadarConsole({
+    required this.kpi,
+    required this.hidden,
+    required this.coveragePct,
+    required this.onToggleHidden,
+    required this.onNavigateTab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final isPositive = kpi.isTruePositive as bool;
+    final accent = isPositive ? AppColors.accentGreen : AppColors.accentRose;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: accent.withValues(alpha: isDark ? 0.32 : 0.4),
+          width: 1.2,
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.bgCard2,
+                  AppColors.bgCard,
+                  accent.withValues(alpha: 0.10),
+                ]
+              : [
+                  Colors.white,
+                  const Color(0xFFF8FAFC),
+                  accent.withValues(alpha: 0.08),
+                ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? accent.withValues(alpha: 0.12) : const Color(0x100F172A),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.14 : 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accent.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isPositive ? 'NET POSITIVE WEALTH' : 'TRUE NET LIABILITY',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: hidden ? 'Show numbers' : 'Hide numbers',
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                  hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 18,
+                  color: context.textSecondary,
+                ),
+                onPressed: onToggleHidden,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            'True Net Position (After Bullion Cost Basis)',
+            style: TextStyle(fontSize: 12, color: context.textSecondary, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              hidden ? '₹ • • • • • •' : (kpi.trueNetFormatted as String),
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1.2,
+                color: context.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Net before bullion: ${hidden ? '₹ ••••••' : kpi.asalNetDebtFormatted} · Pocket card debt: ${hidden ? '₹ ••••••' : kpi.pocketDebtFormatted}',
+            style: TextStyle(fontSize: 11, color: context.textTertiary),
+          ),
+          const SizedBox(height: 16),
+
+          // Wealth vs Debt Coverage Progress Meter
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Asset Coverage Ratio',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.textSecondary),
+                  ),
+                  Text(
+                    '${coveragePct.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: coveragePct >= 80
+                          ? AppColors.accentGreen
+                          : coveragePct >= 40
+                              ? AppColors.accentAmber
+                              : AppColors.accentRose,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: coveragePct / 100.0,
+                  minHeight: 6,
+                  backgroundColor: context.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    coveragePct >= 80
+                        ? AppColors.accentGreen
+                        : coveragePct >= 40
+                            ? AppColors.accentAmber
+                            : AppColors.accentRose,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Receivables & Bullion cover ${coveragePct.toStringAsFixed(1)}% of your gross liabilities.',
+                style: TextStyle(fontSize: 10, color: context.textTertiary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 3 Bottom Pills
+          Row(
+            children: [
+              Expanded(
+                child: _PillBox(
+                  label: 'Kul Dena',
+                  value: hidden ? '₹ ••••' : (kpi.kulDenaFormatted as String),
+                  color: AppColors.accentRose,
+                  onTap: () => onNavigateTab(1),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PillBox(
+                  label: 'Kul Lena',
+                  value: hidden ? '₹ ••••' : (kpi.kulLenaFormatted as String),
+                  color: AppColors.accentGreen,
+                  onTap: () => onNavigateTab(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _PillBox(
+                  label: 'Bullion Basis',
+                  value: hidden ? '₹ ••••' : (kpi.gullakAssetFormatted as String),
+                  color: AppColors.accentAmber,
+                  onTap: () => onNavigateTab(3),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _PillBox({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: context.isDark ? AppColors.bgPrimary.withValues(alpha: 0.6) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: context.textTertiary,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── QUICK ACTION BUTTON ────────────────────────────────────────────────
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.bgCard : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.border),
+            boxShadow: isDark
+                ? null
+                : [
+                    const BoxShadow(
+                      color: Color(0x080F172A),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isDark ? 0.16 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 17),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── HEALTH SCORE CARD ──────────────────────────────────────────────────
 class _HealthScoreCard extends StatelessWidget {
   final dynamic kpi;
   const _HealthScoreCard({required this.kpi});
@@ -346,22 +768,25 @@ class _HealthScoreCard extends StatelessWidget {
           Row(
             children: [
               SizedBox(
-                width: 64,
-                height: 64,
+                width: 68,
+                height: 68,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     CircularProgressIndicator(
                       value: (hs.score as int) / 100.0,
                       strokeWidth: 7,
-                      backgroundColor: AppColors.border,
+                      backgroundColor: context.border,
                       valueColor: AlwaysStoppedAnimation<Color>(ringColor),
                     ),
                     Center(
                       child: Text(
                         '${hs.score}',
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w900, color: ringColor),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: ringColor,
+                        ),
                       ),
                     ),
                   ],
@@ -377,23 +802,32 @@ class _HealthScoreCard extends StatelessWidget {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Text('Financial Health Score', style: AppTextStyles.sectionTitle),
+                        Text(
+                          'Financial Health Score',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
                         StatusChip(
                           text: hs.ratingLabel as String,
                           color: ringColor,
-                          bgColor: ringColor.withValues(alpha: 0.14),
+                          bgColor: ringColor.withValues(alpha: context.isDark ? 0.16 : 0.12),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(hs.disclaimer as String,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textTertiary)),
+                    Text(
+                      hs.disclaimer as String,
+                      style: TextStyle(fontSize: 10, color: context.textTertiary),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           ...hs.breakdown.map<Widget>((b) {
             final pct = b.max > 0 ? ((b.score / b.max) * 100).toDouble() : 0.0;
             return Padding(
@@ -408,12 +842,18 @@ class _HealthScoreCard extends StatelessWidget {
                           b.label as String,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 11, color: context.textSecondary),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('${b.score}/${b.max}',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text(
+                        '${b.score}/${b.max}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -436,6 +876,7 @@ class _HealthScoreCard extends StatelessWidget {
   }
 }
 
+// ── LIABILITY BAR CHART CARD ───────────────────────────────────────────
 class _LiabilityChartCard extends StatelessWidget {
   final dynamic kpi;
   final bool hidden;
@@ -459,7 +900,7 @@ class _LiabilityChartCard extends StatelessWidget {
         children: [
           const SectionHeader(
             title: 'Balance Sheet Snapshot',
-            subtitle: 'Liabilities vs Receivables & Assets (₹)',
+            subtitle: 'Liabilities vs Receivables & Bullion Assets (₹)',
           ),
           const SizedBox(height: 18),
           SizedBox(
@@ -472,18 +913,21 @@ class _LiabilityChartCard extends StatelessWidget {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (_) =>
-                      FlLine(color: AppColors.border.withValues(alpha: 0.6), strokeWidth: 1),
+                      FlLine(color: context.border.withValues(alpha: 0.6), strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => AppColors.bgCard2,
+                    getTooltipColor: (_) => context.bgCard2,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final item = items[group.x];
                       return BarTooltipItem(
                         '${item.$1}\n${hidden ? '₹ ••••••' : INRFormatter.formatPaise(item.$2)}',
-                        const TextStyle(
-                            color: AppColors.textPrimary, fontWeight: FontWeight.w700, fontSize: 11),
+                        TextStyle(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
                       );
                     },
                   ),
@@ -502,7 +946,7 @@ class _LiabilityChartCard extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             items[idx].$1,
-                            style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 10, color: context.textSecondary),
                           ),
                         );
                       },

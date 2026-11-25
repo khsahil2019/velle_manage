@@ -198,7 +198,7 @@ class SeedService {
         gstPaise: 7679,
         totalPaidPaise: 263624,
         purchaseDate: DateTime(2026, 11, 20, 14, 48),
-        platform: 'Gullak',
+        platform: 'Vault',
       ),
       BullionTransactionModel(
         id: _uuid.v4(),
@@ -210,7 +210,7 @@ class SeedService {
         gstPaise: 7675,
         totalPaidPaise: 263510,
         purchaseDate: DateTime(2026, 11, 20, 14, 49),
-        platform: 'Gullak',
+        platform: 'Vault',
       ),
       BullionTransactionModel(
         id: _uuid.v4(),
@@ -222,7 +222,7 @@ class SeedService {
         gstPaise: 3696,
         totalPaidPaise: 126892,
         purchaseDate: DateTime(2026, 11, 25, 21, 51),
-        platform: 'Gullak',
+        platform: 'Vault',
       ),
       BullionTransactionModel(
         id: _uuid.v4(),
@@ -234,7 +234,7 @@ class SeedService {
         gstPaise: 4792,
         totalPaidPaise: 164540,
         purchaseDate: DateTime(2026, 11, 20, 14, 44),
-        platform: 'Gullak',
+        platform: 'Vault',
       ),
       BullionTransactionModel(
         id: _uuid.v4(),
@@ -246,7 +246,7 @@ class SeedService {
         gstPaise: 2190,
         totalPaidPaise: 75155,
         purchaseDate: DateTime(2026, 11, 25, 22, 0),
-        platform: 'Gullak',
+        platform: 'Vault',
       ),
     ];
 

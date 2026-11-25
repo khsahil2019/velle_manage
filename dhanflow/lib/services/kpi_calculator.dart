@@ -43,15 +43,18 @@ class KPICalculator {
       'silver',
       state.settings.silverCurrentSellPaise,
     );
-    final gullakAsset = goldStats.preGstAssetPaise + silverStats.preGstAssetPaise;
-    final trueNetLiability = asalNetDebt - gullakAsset;
+    final metalsAsset = goldStats.preGstAssetPaise + silverStats.preGstAssetPaise;
+    final customAssetsTotal =
+        state.personalAssets.fold<int>(0, (s, a) => s + a.currentValuePaise);
+    final totalAssets = metalsAsset + customAssetsTotal;
+    final trueNetLiability = asalNetDebt - totalAssets;
 
     final healthScore = _computeHealthScore(
       cards: activeCards,
       loans: state.loans,
       recoveries: state.recoveries,
       kulDena: kulDena,
-      gullakAsset: gullakAsset,
+      gullakAsset: totalAssets,
       totalCCLimit: totalCCLimit,
       totalCCOutstanding: totalCCOutstanding,
     );
@@ -61,6 +64,7 @@ class KPICalculator {
       loans: activeLoans,
       goldStats: goldStats,
       silverStats: silverStats,
+      personalAssets: state.personalAssets,
     );
 
     return KPISnapshot(
@@ -71,7 +75,9 @@ class KPICalculator {
       kulDenaPaise: kulDena,
       kulLenaPaise: kulLena,
       asalNetDebtPaise: asalNetDebt,
-      gullakAssetPaise: gullakAsset,
+      gullakAssetPaise: totalAssets,
+      metalsAssetPaise: metalsAsset,
+      customAssetsPaise: customAssetsTotal,
       trueNetLiabilityPaise: trueNetLiability,
       pocketDebtPaise: pocketDebt,
       totalCardsCount: activeCards.length,
@@ -170,6 +176,7 @@ class KPICalculator {
     required List<LoanModel> loans,
     required BullionStats goldStats,
     required BullionStats silverStats,
+    List<PersonalAssetModel> personalAssets = const [],
   }) {
     final alerts = <SmartAlert>[];
 
@@ -209,6 +216,15 @@ class KPICalculator {
           message: 'Unrealized gain of ${INRFormatter.formatPaise(pl)}',
         ));
       }
+    }
+
+    final customGain = personalAssets.fold<int>(0, (s, a) => s + a.gainLossPaise);
+    if (customGain > 0) {
+      alerts.add(SmartAlert(
+        severity: 'positive',
+        title: 'Personal Assets Appreciation',
+        message: 'Your diamonds & holdings gained ${INRFormatter.formatPaise(customGain)} over purchase cost.',
+      ));
     }
 
     return alerts;

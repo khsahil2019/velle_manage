@@ -135,22 +135,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               opacity: _logoFade,
                               child: ScaleTransition(
                                 scale: _logoScale,
-                                child: Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        AppColors.accentGreen.withValues(alpha: 0.22),
-                                        AppColors.accentGreen.withValues(alpha: 0.02),
-                                      ],
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 140,
+                                      height: 140,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            AppColors.accentGreen.withValues(alpha: 0.28),
+                                            AppColors.accentAmber.withValues(alpha: 0.10),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    border: Border.all(
-                                      color: AppColors.accentGreen.withValues(alpha: 0.28),
-                                      width: 1.2,
+                                    const TrustvlyLogo(
+                                      size: 104,
+                                      floating: true,
                                     ),
-                                  ),
-                                  child: const TrustvlyLogo(size: 92, borderRadius: 24),
+                                  ],
                                 ),
                               ),
                             ),

@@ -49,11 +49,98 @@ class DhanflowApp extends StatelessWidget {
             create: (_) => AuthCubit(apiClient: apiClient)..loadSession()),
         BlocProvider(create: (_) => DhanflowCubit(repository: repository)),
       ],
-      child: MaterialApp(
-        title: 'Trustvly',
-        debugShowCheckedModeBanner: false,
-        theme: _buildDarkTheme(context),
-        home: const SplashScreen(),
+      child: BlocBuilder<DhanflowCubit, DhanflowViewState>(
+        builder: (context, state) {
+          final themeSetting = state.appState.settings.themeMode;
+          final themeMode = themeSetting == 'light'
+              ? ThemeMode.light
+              : themeSetting == 'system'
+                  ? ThemeMode.system
+                  : ThemeMode.dark;
+
+          return MaterialApp(
+            title: 'Trustvly',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeMode,
+            theme: _buildLightTheme(context),
+            darkTheme: _buildDarkTheme(context),
+            home: const SplashScreen(),
+          );
+        },
+      ),
+    );
+  }
+
+  ThemeData _buildLightTheme(BuildContext context) {
+    final base = ThemeData.light(useMaterial3: true);
+    return base.copyWith(
+      scaffoldBackgroundColor: AppColors.lightBgPrimary,
+      textTheme: GoogleFonts.interTextTheme(base.textTheme).apply(
+        bodyColor: AppColors.lightTextPrimary,
+        displayColor: AppColors.lightTextPrimary,
+      ),
+      colorScheme: const ColorScheme.light(
+        surface: AppColors.lightBgPrimary,
+        surfaceContainerHighest: AppColors.lightBgCard2,
+        primary: Color(0xFF059669),
+        secondary: Color(0xFFD97706),
+        error: Color(0xFFDC2626),
+        onSurface: AppColors.lightTextPrimary,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.lightBgPrimary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
+        titleTextStyle: TextStyle(
+          color: AppColors.lightTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: AppColors.lightBgCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.lightBorder, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF059669),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+          color: AppColors.lightBorder, thickness: 1, space: 0),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.lightBgCard2,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.lightBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.lightBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              const BorderSide(color: Color(0xFF059669), width: 1.5),
+        ),
+        labelStyle: const TextStyle(color: AppColors.lightTextSecondary),
+        hintStyle: const TextStyle(color: AppColors.lightTextTertiary),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }

@@ -490,7 +490,7 @@ class DhanflowRepository {
     );
   }
 
-  // ── GULLAK BULLION ────────────────────────────────────────────
+  // ── WEALTH & ASSET VAULT ───────────────────────────────────────
 
   DhanflowAppState addBullionPurchase(
     DhanflowAppState state, {
@@ -499,7 +499,7 @@ class DhanflowRepository {
     int? buyRatePaise,
     int? totalPaidPaise,
     required DateTime purchaseDate,
-    String platform = 'Gullak',
+    String platform = 'Vault',
   }) {
     if (gramsX10000 <= 0) throw const ValidationFailure('Grams must be positive');
 
@@ -553,11 +553,108 @@ class DhanflowRepository {
       state,
       state.copyWith(
           bullionTransactions: state.bullionTransactions.where((t) => t.id != id).toList()),
-      eventType: 'BULLION_BUY',
-      description: 'Removed ${txn.metal} entry (${txn.gramsFormatted} @ ${txn.rateFormatted})',
+      eventType: 'ASSET_REMOVE',
+      description: 'Removed ${txn.metal} holding (${txn.gramsFormatted} @ ${txn.rateFormatted})',
       deltaPaise: -txn.totalPaidPaise,
       entityId: txn.id,
       entityName: txn.metal,
+    );
+  }
+
+  DhanflowAppState addPersonalAsset(
+    DhanflowAppState state, {
+    required String title,
+    required String category,
+    String quantityLabel = '1 Unit',
+    required int purchaseValuePaise,
+    required int currentValuePaise,
+    String note = '',
+    DateTime? acquiredDate,
+  }) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) throw const ValidationFailure('Asset title is required');
+    if (currentValuePaise < 0 || purchaseValuePaise < 0) {
+      throw const ValidationFailure('Asset values cannot be negative');
+    }
+    final now = DateTime.now();
+    final asset = PersonalAssetModel(
+      id: _uuid.v4(),
+      userId: 'local',
+      title: trimmed,
+      category: category.toLowerCase(),
+      quantityLabel: quantityLabel.trim().isEmpty ? '1 Unit' : quantityLabel.trim(),
+      purchaseValuePaise: purchaseValuePaise,
+      currentValuePaise: currentValuePaise,
+      note: note.trim(),
+      acquiredDate: acquiredDate ?? now,
+      createdAt: now,
+    );
+    return _commit(
+      state,
+      state.copyWith(personalAssets: [asset, ...state.personalAssets]),
+      eventType: 'ASSET_ADD',
+      description:
+          'Added ${asset.categoryLabel}: ${asset.title} (${asset.quantityLabel}) valued at ${asset.currentValueFormatted}',
+      deltaPaise: asset.currentValuePaise,
+      entityId: asset.id,
+      entityName: asset.title,
+    );
+  }
+
+  DhanflowAppState updatePersonalAsset(
+    DhanflowAppState state, {
+    required String assetId,
+    required String title,
+    required String category,
+    required String quantityLabel,
+    required int purchaseValuePaise,
+    required int currentValuePaise,
+    required String note,
+  }) {
+    final existing = state.personalAssets.firstWhere((a) => a.id == assetId);
+    final updated = existing.copyWith(
+      title: title.trim().isEmpty ? existing.title : title.trim(),
+      category: category.toLowerCase(),
+      quantityLabel: quantityLabel.trim().isEmpty ? '1 Unit' : quantityLabel.trim(),
+      purchaseValuePaise: purchaseValuePaise,
+      currentValuePaise: currentValuePaise,
+      note: note.trim(),
+    );
+    final updatedList =
+        state.personalAssets.map((a) => a.id == assetId ? updated : a).toList();
+    return _commit(
+      state,
+      state.copyWith(personalAssets: updatedList),
+      eventType: 'ASSET_UPDATE',
+      description:
+          'Updated ${updated.title}: valuation ${existing.currentValueFormatted} → ${updated.currentValueFormatted}',
+      deltaPaise: updated.currentValuePaise - existing.currentValuePaise,
+      entityId: updated.id,
+      entityName: updated.title,
+    );
+  }
+
+  DhanflowAppState deletePersonalAsset(DhanflowAppState state, String assetId) {
+    final existing = state.personalAssets.firstWhere((a) => a.id == assetId);
+    return _commit(
+      state,
+      state.copyWith(
+        personalAssets: state.personalAssets.where((a) => a.id != assetId).toList(),
+      ),
+      eventType: 'ASSET_REMOVE',
+      description: 'Removed asset: ${existing.title} (${existing.currentValueFormatted})',
+      deltaPaise: -existing.currentValuePaise,
+      entityId: existing.id,
+      entityName: existing.title,
+    );
+  }
+
+  DhanflowAppState logExportBackup(DhanflowAppState state) {
+    return _commit(
+      state,
+      state,
+      eventType: 'EXPORT',
+      description: 'Exported portable JSON financial snapshot',
     );
   }
 
@@ -575,6 +672,14 @@ class DhanflowRepository {
   }
 
   // ── SETTINGS / DEBT ENGINE / BACKUP / UNDO ────────────────────
+
+  DhanflowAppState updateThemeMode(DhanflowAppState state, String mode) {
+    final updated = state.copyWith(
+      settings: state.settings.copyWith(themeMode: mode),
+    );
+    LocalStorageService.saveState(updated);
+    return updated;
+  }
 
   DhanflowAppState updateDebtEngineSettings(
     DhanflowAppState state, {

@@ -1,45 +1,59 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
-/// Trustvly brand icon emblem backed by the 1024px high-res asset
+/// Trustvly brand icon emblem backed by high-res 3D transparent asset
 class TrustvlyLogo extends StatelessWidget {
   final double size;
   final double borderRadius;
+  final bool floating;
 
   const TrustvlyLogo({
     super.key,
     this.size = 36,
     this.borderRadius = 11,
+    this.floating = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (floating) {
+      return Image.asset(
+        'assets/trustvly_emblem_transparent.png',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.bgPrimary,
+        color: isDark ? AppColors.bgCard : Colors.white,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: AppColors.accentGreen.withValues(alpha: 0.45),
+          color: isDark
+              ? AppColors.accentGreen.withValues(alpha: 0.4)
+              : AppColors.accentGreen.withValues(alpha: 0.3),
           width: size > 48 ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentGreen.withValues(alpha: 0.22),
+            color: isDark
+                ? AppColors.accentGreen.withValues(alpha: 0.22)
+                : const Color(0x14000000),
             blurRadius: size * 0.35,
             offset: Offset(0, size * 0.08),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular((borderRadius - 1).clamp(0, borderRadius)),
-        child: Image.asset(
-          'assets/trustvly_icon_1024.png',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
+      padding: EdgeInsets.all(size * 0.12),
+      child: Image.asset(
+        'assets/trustvly_emblem_transparent.png',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -65,16 +79,19 @@ class DhanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final defaultBg = isDark ? AppColors.bgCard : AppColors.lightBgCard;
+    final defaultBorder = isDark ? AppColors.border : AppColors.lightBorder;
     final decoration = BoxDecoration(
-      color: gradient == null ? (backgroundColor ?? AppColors.bgCard) : null,
+      color: gradient == null ? (backgroundColor ?? defaultBg) : null,
       gradient: gradient,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: borderColor ?? AppColors.border, width: 1),
+      border: Border.all(color: borderColor ?? defaultBorder, width: 1),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.22),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
+          color: isDark ? Colors.black.withValues(alpha: 0.22) : const Color(0x0A0F172A),
+          blurRadius: isDark ? 16 : 8,
+          offset: const Offset(0, 4),
         ),
       ],
     );
@@ -93,7 +110,7 @@ class DhanCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        hoverColor: AppColors.bgHover.withValues(alpha: 0.5),
+        hoverColor: (isDark ? AppColors.bgHover : AppColors.lightBgHover).withValues(alpha: 0.5),
         child: Ink(
           padding: padding ?? const EdgeInsets.all(16),
           decoration: decoration,
@@ -126,26 +143,33 @@ class HeroCommandCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDark;
     final accent = isPositive ? AppColors.accentGreen : AppColors.accentRose;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        border: Border.all(color: accent.withValues(alpha: isDark ? 0.28 : 0.35)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.bgCard2,
-            AppColors.bgCard,
-            accent.withValues(alpha: 0.08),
-          ],
+          colors: isDark
+              ? [
+                  AppColors.bgCard2,
+                  AppColors.bgCard,
+                  accent.withValues(alpha: 0.08),
+                ]
+              : [
+                  Colors.white,
+                  const Color(0xFFF8FAFC),
+                  accent.withValues(alpha: 0.06),
+                ],
         ),
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.08),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+            color: isDark ? accent.withValues(alpha: 0.08) : const Color(0x0F0F172A),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -158,7 +182,7 @@ class HeroCommandCard extends StatelessWidget {
                 child: StatusChip(
                   text: isPositive ? 'NET POSITIVE' : 'NET LIABILITY AFTER ASSETS',
                   color: accent,
-                  bgColor: accent.withValues(alpha: 0.14),
+                  bgColor: accent.withValues(alpha: isDark ? 0.14 : 0.12),
                 ),
               ),
               const SizedBox(width: 8),
@@ -168,31 +192,31 @@ class HeroCommandCard extends StatelessWidget {
                 icon: Icon(
                   hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 18,
-                  color: AppColors.textSecondary,
+                  color: context.textSecondary,
                 ),
                 onPressed: onToggleHidden,
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          Text(title, style: TextStyle(fontSize: 12, color: context.textSecondary)),
           const SizedBox(height: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               hidden ? '₹ • • • • • •' : mainValue,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -1.1,
-                color: AppColors.textPrimary,
-                fontFeatures: [FontFeature.tabularFigures()],
+                color: context.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+          Text(subtitle, style: TextStyle(fontSize: 11, color: context.textTertiary)),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -201,19 +225,19 @@ class HeroCommandCard extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.bgPrimary.withValues(alpha: 0.65),
+                  color: isDark ? AppColors.bgPrimary.withValues(alpha: 0.65) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       p.label.toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textTertiary,
+                        color: context.textTertiary,
                         letterSpacing: 0.4,
                       ),
                     ),
@@ -263,7 +287,7 @@ class KPITile extends StatelessWidget {
     return DhanCard(
       onTap: onTap,
       padding: const EdgeInsets.all(14),
-      borderColor: AppColors.border,
+      borderColor: context.border,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +299,7 @@ class KPITile extends StatelessWidget {
                 width: 26,
                 height: 26,
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.14),
+                  color: accentColor.withValues(alpha: context.isDark ? 0.14 : 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, size: 14, color: accentColor),
@@ -286,10 +310,10 @@ class KPITile extends StatelessWidget {
                   label.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textTertiary,
+                    color: context.textTertiary,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -316,9 +340,9 @@ class KPITile extends StatelessWidget {
             subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
-              color: AppColors.textTertiary,
+              color: context.textTertiary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -421,7 +445,7 @@ class UtilizationBar extends StatelessWidget {
         builder: (context, val, _) => LinearProgressIndicator(
           value: val,
           minHeight: height,
-          backgroundColor: AppColors.border,
+          backgroundColor: context.border,
           valueColor: AlwaysStoppedAnimation<Color>(barColor),
         ),
       ),
@@ -486,10 +510,26 @@ class SectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTextStyles.sectionTitle),
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+              ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
-                Text(subtitle!, style: AppTextStyles.caption),
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: context.textTertiary,
+                  ),
+                ),
               ],
             ],
           ),
@@ -507,10 +547,11 @@ Future<T?> showDhanBottomSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.bgCard2,
+    backgroundColor: isDark ? AppColors.bgCard2 : Colors.white,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -532,7 +573,7 @@ Future<T?> showDhanBottomSheet<T>(
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.borderLight,
+                  color: isDark ? AppColors.borderLight : AppColors.lightBorderLight,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -554,6 +595,7 @@ Future<void> showProtectedDeleteDialog(
   required VoidCallback onConfirm,
   String actionLabel = 'Confirm Delete',
 }) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   final confirmCtrl = TextEditingController();
   return showDialog<void>(
     context: context,
@@ -561,7 +603,7 @@ Future<void> showProtectedDeleteDialog(
       builder: (ctx, setDialogState) {
         final isUnlocked = confirmCtrl.text.trim().toUpperCase() == 'DELETE';
         return AlertDialog(
-          backgroundColor: AppColors.bgCard2,
+          backgroundColor: isDark ? AppColors.bgCard2 : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: AppColors.accentRose.withValues(alpha: 0.35)),
@@ -572,14 +614,22 @@ Future<void> showProtectedDeleteDialog(
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: AppColors.roseDim,
+                  color: isDark ? AppColors.roseDim : AppColors.lightRoseDim,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.shield_outlined, color: AppColors.accentRose, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(title, style: AppTextStyles.sectionTitle),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
               ),
             ],
           ),
@@ -587,18 +637,29 @@ Future<void> showProtectedDeleteDialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(message, style: AppTextStyles.body),
+              Text(
+                message,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: isDark ? AppColors.textSecondary : AppColors.lightTextSecondary,
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.roseDim.withValues(alpha: 0.35),
+                  color: (isDark ? AppColors.roseDim : AppColors.lightRoseDim).withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.accentRose.withValues(alpha: 0.3)),
                 ),
-                child: const Text(
+                child: Text(
                   'Protected action: direct one-tap delete is disabled. Type DELETE below to confirm.',
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? AppColors.textSecondary : AppColors.lightTextSecondary,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -606,9 +667,10 @@ Future<void> showProtectedDeleteDialog(
                 controller: confirmCtrl,
                 textCapitalization: TextCapitalization.characters,
                 onChanged: (_) => setDialogState(() {}),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Type DELETE to unlock',
                   hintText: 'DELETE',
+                  fillColor: isDark ? AppColors.bgHover : AppColors.lightBgCard2,
                 ),
               ),
             ],
@@ -620,8 +682,12 @@ Future<void> showProtectedDeleteDialog(
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isUnlocked ? AppColors.accentRose : AppColors.bgHover,
-                foregroundColor: isUnlocked ? Colors.white : AppColors.textTertiary,
+                backgroundColor: isUnlocked
+                    ? AppColors.accentRose
+                    : (isDark ? AppColors.bgHover : AppColors.lightBgHover),
+                foregroundColor: isUnlocked
+                    ? Colors.white
+                    : (isDark ? AppColors.textTertiary : AppColors.lightTextTertiary),
               ),
               onPressed: isUnlocked
                   ? () {

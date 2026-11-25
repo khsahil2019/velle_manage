@@ -324,6 +324,7 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
     int? buyRatePaise,
     int? totalPaidPaise,
     required DateTime purchaseDate,
+    String platform = 'Vault',
   }) =>
       _apply(
         (s) => repository.addBullionPurchase(s,
@@ -331,13 +332,69 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
             gramsX10000: gramsX10000,
             buyRatePaise: buyRatePaise,
             totalPaidPaise: totalPaidPaise,
-            purchaseDate: purchaseDate),
-        successMsg: 'Bullion purchase added',
+            purchaseDate: purchaseDate,
+            platform: platform),
+        successMsg: 'Asset purchase added',
       );
 
   void deleteBullionTransaction(String id) => _apply(
         (s) => repository.deleteBullionTransaction(s, id),
-        successMsg: 'Transaction removed',
+        successMsg: 'Entry removed',
+      );
+
+  void addPersonalAsset({
+    required String title,
+    required String category,
+    String quantityLabel = '1 Unit',
+    required int purchaseValuePaise,
+    required int currentValuePaise,
+    String note = '',
+    DateTime? acquiredDate,
+  }) =>
+      _apply(
+        (s) => repository.addPersonalAsset(
+          s,
+          title: title,
+          category: category,
+          quantityLabel: quantityLabel,
+          purchaseValuePaise: purchaseValuePaise,
+          currentValuePaise: currentValuePaise,
+          note: note,
+          acquiredDate: acquiredDate,
+        ),
+        successMsg: 'Asset added to vault',
+      );
+
+  void updatePersonalAsset({
+    required String assetId,
+    required String title,
+    required String category,
+    required String quantityLabel,
+    required int purchaseValuePaise,
+    required int currentValuePaise,
+    required String note,
+  }) =>
+      _apply(
+        (s) => repository.updatePersonalAsset(
+          s,
+          assetId: assetId,
+          title: title,
+          category: category,
+          quantityLabel: quantityLabel,
+          purchaseValuePaise: purchaseValuePaise,
+          currentValuePaise: currentValuePaise,
+          note: note,
+        ),
+        successMsg: 'Asset valuation updated',
+      );
+
+  void deletePersonalAsset(String assetId) => _apply(
+        (s) => repository.deletePersonalAsset(s, assetId),
+        successMsg: 'Asset removed',
+      );
+
+  void recordExportBackup() => _apply(
+        (s) => repository.logExportBackup(s),
       );
 
   void updateSellPrice(String metal, int? sellPricePaise) {
@@ -360,6 +417,24 @@ class DhanflowCubit extends Cubit<DhanflowViewState> {
       next,
       repository.canUndo,
       syncStatus: repository.isAuthenticated ? CloudSyncStatus.syncing : CloudSyncStatus.offline,
+      lastSyncedAt: state.lastSyncedAt,
+      hideBalances: state.hideBalances,
+    ));
+    if (repository.isAuthenticated) _scheduleAutoCloudSync();
+  }
+
+  void toggleThemeMode() {
+    final current = state.appState.settings.themeMode;
+    final nextMode = current == 'light' ? 'dark' : 'light';
+    setThemeMode(nextMode);
+  }
+
+  void setThemeMode(String mode) {
+    final next = repository.updateThemeMode(state.appState, mode);
+    emit(_buildViewState(
+      next,
+      repository.canUndo,
+      syncStatus: state.syncStatus,
       lastSyncedAt: state.lastSyncedAt,
       hideBalances: state.hideBalances,
     ));

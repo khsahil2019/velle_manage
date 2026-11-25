@@ -177,7 +177,9 @@ class KPISnapshot extends Equatable {
   final int kulDenaPaise;
   final int kulLenaPaise;
   final int asalNetDebtPaise;
-  final int gullakAssetPaise;
+  final int gullakAssetPaise; // Combined Total Assets (Metals + Diamonds & Custom Assets)
+  final int metalsAssetPaise;
+  final int customAssetsPaise;
   final int trueNetLiabilityPaise;
   final int pocketDebtPaise;
 
@@ -198,6 +200,8 @@ class KPISnapshot extends Equatable {
     required this.kulLenaPaise,
     required this.asalNetDebtPaise,
     required this.gullakAssetPaise,
+    this.metalsAssetPaise = 0,
+    this.customAssetsPaise = 0,
     required this.trueNetLiabilityPaise,
     required this.pocketDebtPaise,
     required this.totalCardsCount,
@@ -212,10 +216,14 @@ class KPISnapshot extends Equatable {
   double get overallUtilizationPct =>
       totalCCLimitPaise > 0 ? (totalCCOutstandingPaise / totalCCLimitPaise) * 100 : 0.0;
 
+  int get totalAssetsPaise => gullakAssetPaise;
   String get kulDenaFormatted => INRFormatter.formatPaise(kulDenaPaise);
   String get kulLenaFormatted => INRFormatter.formatPaise(kulLenaPaise);
   String get asalNetDebtFormatted => INRFormatter.formatPaise(asalNetDebtPaise);
   String get gullakAssetFormatted => INRFormatter.formatPaise(gullakAssetPaise);
+  String get totalAssetsFormatted => INRFormatter.formatPaise(gullakAssetPaise);
+  String get customAssetsFormatted => INRFormatter.formatPaise(customAssetsPaise);
+  String get metalsAssetFormatted => INRFormatter.formatPaise(metalsAssetPaise);
   String get trueNetFormatted => INRFormatter.formatPaise(trueNetLiabilityPaise);
   String get pocketDebtFormatted => INRFormatter.formatPaise(pocketDebtPaise);
 
@@ -250,6 +258,8 @@ class KPISnapshot extends Equatable {
         kulLenaPaise: (json['kul_lena_paise'] as num).toInt(),
         asalNetDebtPaise: (json['asal_net_debt_paise'] as num).toInt(),
         gullakAssetPaise: (json['gullak_asset_paise'] as num).toInt(),
+        metalsAssetPaise: (json['metals_asset_paise'] as num? ?? 0).toInt(),
+        customAssetsPaise: (json['custom_assets_paise'] as num? ?? 0).toInt(),
         trueNetLiabilityPaise: (json['true_net_liability_paise'] as num).toInt(),
         pocketDebtPaise: (json['pocket_debt_paise'] as num).toInt(),
         totalCardsCount: (json['total_cards_count'] as num).toInt(),
@@ -274,6 +284,8 @@ class KPISnapshot extends Equatable {
         kulLenaPaise,
         asalNetDebtPaise,
         gullakAssetPaise,
+        metalsAssetPaise,
+        customAssetsPaise,
         trueNetLiabilityPaise,
         pocketDebtPaise,
         totalCardsCount,

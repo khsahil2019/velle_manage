@@ -370,14 +370,26 @@ class Database {
             "CREATE TABLE IF NOT EXISTS bullion_transactions (
                 id {$str36} PRIMARY KEY,
                 user_id {$str36} NOT NULL,
-                metal VARCHAR(16) NOT NULL,
+                metal VARCHAR(32) NOT NULL,
                 grams_x10000 BIGINT NOT NULL,
                 buy_rate_paise BIGINT NOT NULL,
                 pre_gst_paise BIGINT NOT NULL,
                 gst_paise BIGINT NOT NULL,
                 total_paid_paise BIGINT NOT NULL,
                 purchase_date {$dtType} NOT NULL,
-                platform VARCHAR(50) NOT NULL DEFAULT 'Gullak',
+                platform VARCHAR(50) NOT NULL DEFAULT 'Vault',
+                created_at {$dtType} NOT NULL
+            )",
+            "CREATE TABLE IF NOT EXISTS personal_assets (
+                id {$str36} PRIMARY KEY,
+                user_id {$str36} NOT NULL,
+                title VARCHAR(120) NOT NULL,
+                category VARCHAR(32) NOT NULL DEFAULT 'other',
+                quantity_label VARCHAR(80) NOT NULL DEFAULT '1 Unit',
+                purchase_value_paise BIGINT NOT NULL DEFAULT 0,
+                current_value_paise BIGINT NOT NULL DEFAULT 0,
+                note VARCHAR(255) NULL,
+                acquired_date {$dtType} NOT NULL,
                 created_at {$dtType} NOT NULL
             )",
             "CREATE TABLE IF NOT EXISTS user_settings (

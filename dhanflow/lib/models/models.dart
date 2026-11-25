@@ -449,7 +449,7 @@ class BullionTransactionModel extends Equatable {
         gstPaise: (json['gst_paise'] as num).toInt(),
         totalPaidPaise: (json['total_paid_paise'] as num).toInt(),
         purchaseDate: DateTime.parse(json['purchase_date'] as String),
-        platform: json['platform'] as String? ?? 'Gullak',
+        platform: json['platform'] as String? ?? 'Vault',
       );
 
   Map<String, dynamic> toJson() => {
@@ -542,6 +542,7 @@ class UserSettingsModel extends Equatable {
   final String debtPayoffStrategy; // 'snowball' | 'avalanche' | 'custom'
   final int monthlyPaymentCapacityPaise;
   final String apiBaseUrl;
+  final String themeMode; // 'dark' | 'light' | 'system'
 
   const UserSettingsModel({
     this.goldCurrentSellPaise,
@@ -549,6 +550,7 @@ class UserSettingsModel extends Equatable {
     this.debtPayoffStrategy = 'snowball',
     this.monthlyPaymentCapacityPaise = 2500000, // ₹25,000 default
     this.apiBaseUrl = 'https://vellemanage.vercel.app',
+    this.themeMode = 'dark',
   });
 
   UserSettingsModel copyWith({
@@ -557,6 +559,7 @@ class UserSettingsModel extends Equatable {
     String? debtPayoffStrategy,
     int? monthlyPaymentCapacityPaise,
     String? apiBaseUrl,
+    String? themeMode,
   }) =>
       UserSettingsModel(
         goldCurrentSellPaise:
@@ -567,6 +570,7 @@ class UserSettingsModel extends Equatable {
         monthlyPaymentCapacityPaise:
             monthlyPaymentCapacityPaise ?? this.monthlyPaymentCapacityPaise,
         apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
+        themeMode: themeMode ?? this.themeMode,
       );
 
   factory UserSettingsModel.fromJson(Map<String, dynamic> json) => UserSettingsModel(
@@ -576,6 +580,7 @@ class UserSettingsModel extends Equatable {
         monthlyPaymentCapacityPaise:
             (json['monthly_payment_capacity'] as num? ?? 2500000).toInt(),
         apiBaseUrl: json['api_base_url'] as String? ?? ApiConstants.defaultBaseUrl,
+        themeMode: json['theme_mode'] as String? ?? 'dark',
       );
 
   Map<String, dynamic> toJson() => {
@@ -584,6 +589,7 @@ class UserSettingsModel extends Equatable {
         'debt_payoff_strategy': debtPayoffStrategy,
         'monthly_payment_capacity': monthlyPaymentCapacityPaise,
         'api_base_url': apiBaseUrl,
+        'theme_mode': themeMode,
       };
 
   @override
@@ -593,6 +599,130 @@ class UserSettingsModel extends Equatable {
         debtPayoffStrategy,
         monthlyPaymentCapacityPaise,
         apiBaseUrl,
+        themeMode,
+      ];
+}
+
+class PersonalAssetModel extends Equatable {
+  final String id;
+  final String userId;
+  final String title;
+  final String category; // diamond, gold, silver, jewelry, property, stocks, cash, vehicle, gadget, other
+  final String quantityLabel;
+  final int purchaseValuePaise;
+  final int currentValuePaise;
+  final String note;
+  final DateTime acquiredDate;
+  final DateTime createdAt;
+
+  const PersonalAssetModel({
+    required this.id,
+    required this.userId,
+    required this.title,
+    required this.category,
+    this.quantityLabel = '1 Unit',
+    required this.purchaseValuePaise,
+    required this.currentValuePaise,
+    this.note = '',
+    required this.acquiredDate,
+    required this.createdAt,
+  });
+
+  int get gainLossPaise => currentValuePaise - purchaseValuePaise;
+  double? get gainLossPct =>
+      purchaseValuePaise > 0 ? (gainLossPaise / purchaseValuePaise) * 100 : null;
+
+  String get currentValueFormatted => INRFormatter.formatPaise(currentValuePaise);
+  String get purchaseValueFormatted => INRFormatter.formatPaise(purchaseValuePaise);
+
+  String get categoryLabel {
+    switch (category.toLowerCase()) {
+      case 'diamond':
+        return 'Diamond';
+      case 'gold':
+        return 'Gold Item';
+      case 'silver':
+        return 'Silver Item';
+      case 'jewelry':
+        return 'Jewelry';
+      case 'property':
+        return 'Property / Land';
+      case 'stocks':
+        return 'Stocks / MF';
+      case 'cash':
+        return 'Cash / FD';
+      case 'vehicle':
+        return 'Vehicle';
+      case 'gadget':
+        return 'Watch / Gadget';
+      default:
+        return 'Personal Asset';
+    }
+  }
+
+  PersonalAssetModel copyWith({
+    String? title,
+    String? category,
+    String? quantityLabel,
+    int? purchaseValuePaise,
+    int? currentValuePaise,
+    String? note,
+    DateTime? acquiredDate,
+  }) =>
+      PersonalAssetModel(
+        id: id,
+        userId: userId,
+        title: title ?? this.title,
+        category: category ?? this.category,
+        quantityLabel: quantityLabel ?? this.quantityLabel,
+        purchaseValuePaise: purchaseValuePaise ?? this.purchaseValuePaise,
+        currentValuePaise: currentValuePaise ?? this.currentValuePaise,
+        note: note ?? this.note,
+        acquiredDate: acquiredDate ?? this.acquiredDate,
+        createdAt: createdAt,
+      );
+
+  factory PersonalAssetModel.fromJson(Map<String, dynamic> json) =>
+      PersonalAssetModel(
+        id: json['id'] as String,
+        userId: json['user_id'] as String? ?? 'local',
+        title: json['title'] as String,
+        category: (json['category'] as String? ?? 'other').toLowerCase(),
+        quantityLabel: json['quantity_label'] as String? ?? '1 Unit',
+        purchaseValuePaise: (json['purchase_value_paise'] as num? ?? 0).toInt(),
+        currentValuePaise: (json['current_value_paise'] as num? ?? 0).toInt(),
+        note: json['note'] as String? ?? '',
+        acquiredDate: json['acquired_date'] != null
+            ? DateTime.parse(json['acquired_date'] as String)
+            : DateTime.now(),
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'] as String)
+            : DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'user_id': userId,
+        'title': title,
+        'category': category,
+        'quantity_label': quantityLabel,
+        'purchase_value_paise': purchaseValuePaise,
+        'current_value_paise': currentValuePaise,
+        'note': note,
+        'acquired_date': acquiredDate.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+      };
+
+  @override
+  List<Object?> get props => [
+        id,
+        title,
+        category,
+        quantityLabel,
+        purchaseValuePaise,
+        currentValuePaise,
+        note,
+        acquiredDate,
       ];
 }
 
@@ -604,6 +734,7 @@ class DhanflowAppState extends Equatable {
   final List<PersonalPayableModel> personalPayables;
   final List<RecoveryModel> recoveries;
   final List<BullionTransactionModel> bullionTransactions;
+  final List<PersonalAssetModel> personalAssets;
   final List<ActivityLogModel> activityLog;
   final UserSettingsModel settings;
 
@@ -615,6 +746,7 @@ class DhanflowAppState extends Equatable {
     required this.personalPayables,
     required this.recoveries,
     required this.bullionTransactions,
+    this.personalAssets = const [],
     required this.activityLog,
     required this.settings,
   });
@@ -626,6 +758,7 @@ class DhanflowAppState extends Equatable {
     List<PersonalPayableModel>? personalPayables,
     List<RecoveryModel>? recoveries,
     List<BullionTransactionModel>? bullionTransactions,
+    List<PersonalAssetModel>? personalAssets,
     List<ActivityLogModel>? activityLog,
     UserSettingsModel? settings,
   }) =>
@@ -637,6 +770,7 @@ class DhanflowAppState extends Equatable {
         personalPayables: personalPayables ?? this.personalPayables,
         recoveries: recoveries ?? this.recoveries,
         bullionTransactions: bullionTransactions ?? this.bullionTransactions,
+        personalAssets: personalAssets ?? this.personalAssets,
         activityLog: activityLog ?? this.activityLog,
         settings: settings ?? this.settings,
       );
@@ -661,6 +795,9 @@ class DhanflowAppState extends Equatable {
         bullionTransactions: (json['bullion_transactions'] as List<dynamic>)
             .map((e) => BullionTransactionModel.fromJson(e as Map<String, dynamic>))
             .toList(),
+        personalAssets: (json['personal_assets'] as List<dynamic>? ?? [])
+            .map((e) => PersonalAssetModel.fromJson(e as Map<String, dynamic>))
+            .toList(),
         activityLog: (json['activity_log'] as List<dynamic>? ?? [])
             .map((e) => ActivityLogModel.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -677,6 +814,7 @@ class DhanflowAppState extends Equatable {
         'personal_payables': personalPayables.map((e) => e.toJson()).toList(),
         'recoveries': recoveries.map((e) => e.toJson()).toList(),
         'bullion_transactions': bullionTransactions.map((e) => e.toJson()).toList(),
+        'personal_assets': personalAssets.map((e) => e.toJson()).toList(),
         'activity_log': activityLog.map((e) => e.toJson()).toList(),
         'user_settings': settings.toJson(),
       };
@@ -690,6 +828,7 @@ class DhanflowAppState extends Equatable {
         personalPayables,
         recoveries,
         bullionTransactions,
+        personalAssets,
         activityLog,
         settings,
       ];

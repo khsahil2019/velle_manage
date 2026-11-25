@@ -123,10 +123,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         state.hideBalances
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: AppColors.textSecondary,
+                        color: context.textSecondary,
                         size: 19,
                       ),
                       onPressed: () => context.read<DhanflowCubit>().toggleHideBalances(),
+                    ),
+                    IconButton(
+                      tooltip: context.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        color: context.isDark ? AppColors.accentAmber : const Color(0xFF6366F1),
+                        size: 19,
+                      ),
+                      onPressed: () => context.read<DhanflowCubit>().toggleThemeMode(),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(right: 10, left: 4),
@@ -177,13 +189,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           }
                           return TextButton.icon(
                             style: TextButton.styleFrom(
-                              backgroundColor: AppColors.bgCard,
-                              foregroundColor: AppColors.textPrimary,
+                              backgroundColor: context.bgCard,
+                              foregroundColor: context.textPrimary,
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
-                                side: const BorderSide(color: AppColors.borderLight),
+                                side: BorderSide(color: context.borderLight),
                               ),
                               padding: EdgeInsets.symmetric(
                                 horizontal: narrow ? 9 : 12,
@@ -210,23 +222,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: AppColors.border),
+            child: Container(height: 1, color: context.border),
           ),
         ),
         body: Row(
           children: [
             if (isWide)
               Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.bgCard,
-                  border: Border(right: BorderSide(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  border: Border(right: BorderSide(color: context.border)),
                 ),
                 child: NavigationRail(
-                  backgroundColor: AppColors.bgCard,
+                  backgroundColor: context.bgCard,
                   selectedIndex: _tabIndex,
                   onDestinationSelected: (i) => setState(() => _tabIndex = i),
                   labelType: NavigationRailLabelType.all,
-                  indicatorColor: AppColors.greenDim,
+                  indicatorColor: context.greenDim,
                   destinations: const [
                     NavigationRailDestination(
                       icon: Icon(Icons.dashboard_outlined),
@@ -279,39 +291,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
         bottomNavigationBar: isWide
             ? null
             : Container(
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: context.border, width: 1)),
                 ),
                 child: NavigationBar(
-                  backgroundColor: AppColors.bgCard,
-                  indicatorColor: AppColors.greenDim,
+                  backgroundColor: context.bgCard,
+                  indicatorColor: context.greenDim,
                   selectedIndex: _tabIndex,
                   onDestinationSelected: (i) => setState(() => _tabIndex = i),
-                  destinations: const [
+                  destinations: [
                     NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.accentGreen),
+                      icon: const Icon(Icons.dashboard_outlined),
+                      selectedIcon: Icon(Icons.dashboard_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
                       label: 'Overview',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.credit_card_outlined),
-                      selectedIcon: Icon(Icons.credit_card_rounded, color: AppColors.accentGreen),
+                      icon: const Icon(Icons.credit_card_outlined),
+                      selectedIcon: Icon(Icons.credit_card_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
                       label: 'Debt',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.handshake_outlined),
-                      selectedIcon: Icon(Icons.handshake_rounded, color: AppColors.accentGreen),
+                      icon: const Icon(Icons.handshake_outlined),
+                      selectedIcon: Icon(Icons.handshake_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
                       label: 'Kul Lena',
                     ),
-                    NavigationDestination(
+                    const NavigationDestination(
                       icon: Icon(Icons.workspace_premium_outlined),
                       selectedIcon:
                           Icon(Icons.workspace_premium_rounded, color: AppColors.accentAmber),
                       label: 'Bullion',
                     ),
                     NavigationDestination(
-                      icon: Icon(Icons.history_outlined),
-                      selectedIcon: Icon(Icons.history_rounded, color: AppColors.accentGreen),
+                      icon: const Icon(Icons.history_outlined),
+                      selectedIcon: Icon(Icons.history_rounded, color: context.isDark ? AppColors.accentGreen : const Color(0xFF059669)),
                       label: 'Activity',
                     ),
                   ],
@@ -346,7 +358,7 @@ class _SyncStatusPill extends StatelessWidget {
         label = 'Retry';
         break;
       case CloudSyncStatus.offline:
-        dotColor = AppColors.textTertiary;
+        dotColor = context.textTertiary;
         label = 'Local';
         break;
     }
@@ -358,9 +370,9 @@ class _SyncStatusPill extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: compact ? 7 : 8, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: context.bgCard,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -1,414 +1,412 @@
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/inr_formatter.dart';
-import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/dhanflow_cubit.dart';
-import '../../services/export_service.dart';
+import '../../models/models.dart';
 import '../../widgets/common/dhan_ui.dart';
-import '../auth/auth_screen.dart';
 
-class ActivityTab extends StatelessWidget {
+/// Pure Activity & Audit Log Screen — records all local JSON, card, loan, recovery, and asset events.
+class ActivityTab extends StatefulWidget {
   const ActivityTab({super.key});
+
+  @override
+  State<ActivityTab> createState() => _ActivityTabState();
+}
+
+class _ActivityTabState extends State<ActivityTab> {
+  String _filter = 'all'; // all | cards | loans | recoveries | assets | system
+  String _query = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _matchesFilter(ActivityLogModel entry) {
+    final t = entry.eventType.toUpperCase();
+    switch (_filter) {
+      case 'cards':
+        return t.startsWith('CC_');
+      case 'loans':
+        return t.contains('LOAN') || t.contains('PAYABLE');
+      case 'recoveries':
+        return t.contains('RECOVERY');
+      case 'assets':
+        return t.contains('BULLION') || t.contains('ASSET');
+      case 'system':
+        return t == 'IMPORT' || t == 'EXPORT' || t == 'SYSTEM';
+      default:
+        return true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DhanflowCubit, DhanflowViewState>(
       builder: (context, state) {
         final cubit = context.read<DhanflowCubit>();
-        final authState = context.watch<AuthCubit>().state;
-        final logs = state.appState.activityLog;
+        final allLogs = state.appState.activityLog;
+        final hidden = state.hideBalances;
+        final isDark = context.isDark;
+
+        final filteredLogs = allLogs.where((entry) {
+          if (!_matchesFilter(entry)) return false;
+          if (_query.isNotEmpty) {
+            final q = _query.toLowerCase();
+            final descMatch = entry.description.toLowerCase().contains(q);
+            final typeMatch = entry.eventType.toLowerCase().contains(q);
+            final entityMatch = (entry.relatedEntityName ?? '').toLowerCase().contains(q);
+            if (!descMatch && !typeMatch && !entityMatch) return false;
+          }
+          return true;
+        }).toList();
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
           children: [
-            // Account & Backend Data Storage Card
-            const SectionHeader(
-              title: 'Account & Cloud Backend Storage',
-              subtitle: 'Sign in or create an account to persist data in PHP + Cloud DB',
-            ),
-            const SizedBox(height: 10),
+            // ── HEADER BANNER ───────────────────────────────────────
             DhanCard(
-              borderColor: authState is AuthAuthenticated
-                  ? AppColors.accentGreen.withValues(alpha: 0.35)
-                  : AppColors.border,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              borderColor: AppColors.accentGreen.withValues(alpha: 0.30),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        AppColors.bgCard2,
+                        AppColors.bgCard,
+                        AppColors.accentGreen.withValues(alpha: 0.08),
+                      ]
+                    : [
+                        Colors.white,
+                        const Color(0xFFF0FDF4),
+                      ],
+              ),
+              child: Row(
                 children: [
-                  Row(
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: context.greenDim,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.35)),
+                    ),
+                    child: const Icon(Icons.history_rounded, color: AppColors.accentGreen, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Activity & Audit Trail',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${allLogs.length} events logged across cards, assets, recoveries & local JSON',
+                          style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (state.canUndo) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accentAmber,
+                        side: BorderSide(color: AppColors.accentAmber.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      onPressed: () => cubit.undoLastAction(),
+                      icon: const Icon(Icons.undo_rounded, size: 15),
+                      label: const Text('Undo', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── SEARCH BAR ──────────────────────────────────────────
+            TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v.trim()),
+              decoration: InputDecoration(
+                hintText: 'Search activities, cards, assets or events...',
+                prefixIcon: Icon(Icons.search_rounded, size: 18, color: context.textTertiary),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close_rounded, size: 16, color: context.textTertiary),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _query = '');
+                        },
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── FILTER PILLS ────────────────────────────────────────
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _LogFilterChip(
+                    label: 'All Logs',
+                    selected: _filter == 'all',
+                    onTap: () => setState(() => _filter = 'all'),
+                  ),
+                  const SizedBox(width: 6),
+                  _LogFilterChip(
+                    label: 'Cards',
+                    selected: _filter == 'cards',
+                    color: AppColors.accentRose,
+                    onTap: () => setState(() => _filter = 'cards'),
+                  ),
+                  const SizedBox(width: 6),
+                  _LogFilterChip(
+                    label: 'Assets',
+                    selected: _filter == 'assets',
+                    color: AppColors.accentAmber,
+                    onTap: () => setState(() => _filter = 'assets'),
+                  ),
+                  const SizedBox(width: 6),
+                  _LogFilterChip(
+                    label: 'Kul Lena',
+                    selected: _filter == 'recoveries',
+                    color: AppColors.accentGreen,
+                    onTap: () => setState(() => _filter = 'recoveries'),
+                  ),
+                  const SizedBox(width: 6),
+                  _LogFilterChip(
+                    label: 'Loans & Dues',
+                    selected: _filter == 'loans',
+                    color: AppColors.accentBlue,
+                    onTap: () => setState(() => _filter = 'loans'),
+                  ),
+                  const SizedBox(width: 6),
+                  _LogFilterChip(
+                    label: 'Local JSON & System',
+                    selected: _filter == 'system',
+                    color: AppColors.accentPurple,
+                    onTap: () => setState(() => _filter = 'system'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // ── ACTIVITY TIMELINE LIST ──────────────────────────────
+            if (filteredLogs.isEmpty)
+              DhanCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
+                  child: Column(
                     children: [
-                      if (authState is AuthAuthenticated)
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppColors.greenDim,
-                          child: Text(
-                            authState.initials,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accentGreen,
-                            ),
-                          ),
-                        )
-                      else
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.bgHover,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.cloud_off_rounded, color: AppColors.textTertiary),
+                      Icon(Icons.receipt_long_outlined, size: 36, color: context.textTertiary),
+                      const SizedBox(height: 10),
+                      Text(
+                        allLogs.isEmpty
+                            ? 'No activity recorded yet.'
+                            : 'No matching logs for this filter.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.textSecondary,
                         ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              authState is AuthAuthenticated
-                                  ? '${authState.user['name']} (${authState.user['email']})'
-                                  : 'Offline Guest Mode (Local Hive)',
-                              style: AppTextStyles.cardTitle,
-                            ),
-                            Text(
-                              authState is AuthAuthenticated
-                                  ? 'Auto-sync enabled · Storage: ${(authState.storageDriver ?? 'Cloud DB').toUpperCase()}'
-                                  : 'Sign in to automatically store & sync data across devices',
-                              style: AppTextStyles.caption,
-                            ),
-                          ],
-                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Card updates, recoveries, asset additions & local JSON snapshots appear here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: context.textTertiary),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  _ApiDiagnosticsStrip(apiUrl: state.appState.settings.apiBaseUrl),
-                  const SizedBox(height: 12),
-                  if (authState is AuthAuthenticated)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: state.isSyncing ? null : () => cubit.pushToCloud(),
-                          icon: const Icon(Icons.cloud_upload_outlined, size: 16),
-                          label: const Text('Push to Cloud'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: state.isSyncing ? null : () => cubit.pullFromCloud(),
-                          icon: const Icon(Icons.cloud_download_outlined, size: 16),
-                          label: const Text('Pull from Cloud'),
-                        ),
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.accentRose,
-                            side: BorderSide(color: AppColors.accentRose.withValues(alpha: 0.5)),
-                          ),
-                          onPressed: () => context.read<AuthCubit>().logout(),
-                          icon: const Icon(Icons.logout_rounded, size: 16),
-                          label: const Text('Sign Out'),
-                        ),
-                      ],
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const AuthScreen()),
-                              );
-                            },
-                            icon: const Icon(Icons.login_rounded, size: 16),
-                            label: const Text('Sign In / Create Account'),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
+                ),
+              )
+            else
+              DhanCard(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                child: Column(
+                  children: filteredLogs.asMap().entries.map((item) {
+                    final idx = item.key;
+                    final entry = item.value;
+                    final isLast = idx == filteredLogs.length - 1;
+                    final meta = _metaForEvent(entry.eventType);
 
-            const SizedBox(height: 16),
-            const SectionHeader(
-              title: 'Local JSON Backup & Snapshot',
-              subtitle: 'Portable JSON export, restore, or reset',
-            ),
-            const SizedBox(height: 10),
-            DhanCard(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await ExportService.exportBackup(state.appState);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('JSON backup exported / copied')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text('Export JSON'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _showImportSheet(context),
-                    icon: const Icon(Icons.upload_rounded, size: 16),
-                    label: const Text('Import JSON'),
-                  ),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accentRose,
-                      side: const BorderSide(color: AppColors.accentRose),
-                    ),
-                    onPressed: () => _confirmReset(context),
-                    icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                    label: const Text('Reset Snapshot'),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
-            SectionHeader(
-              title: 'Immutable Activity & Audit Log',
-              subtitle: 'Undo creates a reversing entry rather than erasing history',
-              trailing: TextButton.icon(
-                onPressed: state.canUndo ? () => cubit.undoLastAction() : null,
-                icon: const Icon(Icons.undo_rounded, size: 16),
-                label: const Text('Undo Last'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            DhanCard(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              child: logs.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Center(child: Text('No events recorded yet.', style: AppTextStyles.body)),
-                    )
-                  : Column(
-                      children: logs.map((entry) {
-                        final color = _colorForEvent(entry.eventType);
-                        return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: AppColors.border)),
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        border: isLast
+                            ? null
+                            : Border(bottom: BorderSide(color: context.border, width: 0.8)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            margin: const EdgeInsets.only(top: 1),
+                            decoration: BoxDecoration(
+                              color: meta.color.withValues(alpha: isDark ? 0.16 : 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: meta.color.withValues(alpha: 0.32)),
+                            ),
+                            child: Icon(meta.icon, size: 17, color: meta.color),
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.only(top: 5),
-                                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: meta.color.withValues(alpha: isDark ? 0.15 : 0.10),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        meta.tag,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: meta.color,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      INRFormatter.timeAgo(entry.createdAt),
+                                      style: TextStyle(fontSize: 10, color: context.textTertiary),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
                                   entry.description,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
                                     color: entry.isReversed
-                                        ? AppColors.textTertiary
-                                        : AppColors.textSecondary,
+                                        ? context.textTertiary
+                                        : context.textPrimary,
                                     decoration: entry.isReversed
                                         ? TextDecoration.lineThrough
                                         : TextDecoration.none,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                INRFormatter.timeAgo(entry.createdAt),
-                                style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(
+                                      INRFormatter.formatDateTime(entry.createdAt),
+                                      style: TextStyle(fontSize: 10, color: context.textTertiary),
+                                    ),
+                                    if (entry.deltaPaise != null && entry.deltaPaise != 0) ...[
+                                      const Spacer(),
+                                      Text(
+                                        hidden
+                                            ? '₹ ••••'
+                                            : '${entry.deltaPaise! > 0 ? '+' : ''}${INRFormatter.formatPaise(entry.deltaPaise!)}',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: meta.color,
+                                          fontFeatures: const [FontFeature.tabularFigures()],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
           ],
         );
       },
     );
   }
 
-  Color _colorForEvent(String eventType) {
-    if (eventType.contains('PAYMENT') || eventType.contains('RECOVERY')) {
-      return AppColors.accentGreen;
+  ({Color color, IconData icon, String tag}) _metaForEvent(String eventType) {
+    final t = eventType.toUpperCase();
+    if (t.contains('PAYMENT') || t.contains('RECOVERY')) {
+      return (color: AppColors.accentGreen, icon: Icons.south_west_rounded, tag: t.replaceAll('_', ' '));
     }
-    if (eventType.contains('SPEND')) return AppColors.accentRose;
-    if (eventType.contains('BULLION')) return AppColors.accentAmber;
-    if (eventType.contains('LOAN')) return AppColors.accentBlue;
-    return AppColors.textTertiary;
-  }
-
-  void _showImportSheet(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDhanBottomSheet(context, builder: (ctx) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('Import JSON Backup', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: 6),
-          const Text('Paste backup JSON or pick a .json file from storage',
-              style: AppTextStyles.caption),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['json'],
-                  );
-                  if (result != null && result.files.single.path != null) {
-                    final content = await File(result.files.single.path!).readAsString();
-                    ctrl.text = content;
-                  }
-                },
-                icon: const Icon(Icons.folder_open_rounded, size: 16),
-                label: const Text('Pick .json File'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final clip = await Clipboard.getData('text/plain');
-                  if (clip?.text != null) ctrl.text = clip!.text!;
-                },
-                icon: const Icon(Icons.paste_rounded, size: 16),
-                label: const Text('Paste'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: ctrl,
-            maxLines: 6,
-            decoration: const InputDecoration(hintText: '{"schema_version": "1.0.0", ...}'),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton(
-            onPressed: () {
-              if (ctrl.text.trim().isEmpty) return;
-              context.read<DhanflowCubit>().importJson(ctrl.text);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Validate & Restore'),
-          ),
-        ],
-      );
-    });
-  }
-
-  void _confirmReset(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard2,
-        title: const Text('Reset to Initial Snapshot?', style: AppTextStyles.sectionTitle),
-        content: const Text(
-          'This restores all 8 credit cards, DMI Finance Loan, Arshi payable, 3 recoveries, and 5 Gullak transactions to exact seed values.',
-          style: AppTextStyles.body,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentRose),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<DhanflowCubit>().resetToSeed();
-            },
-            child: const Text('Reset Everything'),
-          ),
-        ],
-      ),
-    );
+    if (t.contains('SPEND') || t.contains('REMOVE')) {
+      return (color: AppColors.accentRose, icon: Icons.north_east_rounded, tag: t.replaceAll('_', ' '));
+    }
+    if (t.contains('BULLION') || t.contains('ASSET')) {
+      return (color: AppColors.accentAmber, icon: Icons.diamond_outlined, tag: t.replaceAll('_', ' '));
+    }
+    if (t.contains('LOAN') || t.contains('PAYABLE')) {
+      return (color: AppColors.accentBlue, icon: Icons.account_balance_outlined, tag: t.replaceAll('_', ' '));
+    }
+    if (t == 'IMPORT' || t == 'EXPORT') {
+      return (color: AppColors.accentPurple, icon: Icons.data_object_rounded, tag: 'JSON $t');
+    }
+    if (t.startsWith('CC_')) {
+      return (color: AppColors.accentBlue, icon: Icons.credit_card_rounded, tag: t.replaceAll('_', ' '));
+    }
+    return (color: AppColors.accentBlue, icon: Icons.bolt_rounded, tag: t.replaceAll('_', ' '));
   }
 }
 
-class _ApiDiagnosticsStrip extends StatefulWidget {
-  final String apiUrl;
-  const _ApiDiagnosticsStrip({required this.apiUrl});
+class _LogFilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
 
-  @override
-  State<_ApiDiagnosticsStrip> createState() => _ApiDiagnosticsStripState();
-}
-
-class _ApiDiagnosticsStripState extends State<_ApiDiagnosticsStrip> {
-  bool _loading = false;
-  ApiHealthStatus? _status;
-
-  Future<void> _testApi() async {
-    setState(() => _loading = true);
-    final result = await context.read<AuthCubit>().checkBackendHealth();
-    if (!mounted) return;
-    setState(() {
-      _loading = false;
-      _status = result;
-    });
-  }
+  const _LogFilterChip({
+    required this.label,
+    required this.selected,
+    this.color = AppColors.accentGreen,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.bgHover,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.dns_outlined, size: 14, color: AppColors.textTertiary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  widget.apiUrl,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _loading ? null : _testApi,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: Icon(
-                  _loading ? Icons.sync_rounded : Icons.network_check_rounded,
-                  size: 13,
-                ),
-                label: Text(_loading ? 'Checking...' : 'Test API', style: const TextStyle(fontSize: 11)),
-              ),
-            ],
+    final isDark = context.isDark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: isDark ? 0.22 : 0.15)
+              : (isDark ? AppColors.bgCard : Colors.white),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: selected ? color : context.border),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? color : context.textSecondary,
           ),
-          if (_status != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              _status!.message,
-              style: TextStyle(
-                fontSize: 10.5,
-                color: _status!.isFullyReady
-                    ? AppColors.accentGreen
-                    : (_status!.reachable ? AppColors.accentAmber : AppColors.accentRose),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
